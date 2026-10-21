@@ -2711,6 +2711,10 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
         <article class="kpi"><span>Total to target</span><strong id="leaderboardTotalToTargetKpi">0%</strong><small id="leaderboardTargetNote">Target bulan terpilih</small></article>
       </div>
 
+      <section class="table-panel leaderboard-panel" id="leaderboardCoachTablePanel">
+        <div class="panel-heading"><div><h2>Leaderboard Coach - Tabel Lengkap</h2><p>Ringkasan revenue, target, transaksi, dan agent per coach. Daftar ranking di bawah menampilkan progres dan persebaran produk.</p></div></div>
+        <div class="table-wrap"><table class="data-table" id="leaderboardCoachTable"><thead><tr><th>Rank</th><th>Coach / Leader</th><th>Kategori</th><th>Agent</th><th>Transaksi</th><th>Revenue</th><th>Target</th><th>% Target</th><th>Gap ke atas</th></tr></thead><tbody></tbody></table></div>
+      </section>
       <div id="leaderboardPodium" class="inc-podium" hidden></div>
 
       <section class="table-panel leaderboard-panel">
@@ -4782,6 +4786,11 @@ function renderLeaderboard() {
   el("leaderboardTargetNote").textContent = `Target ${periodText}`;
   el("leaderboardLayerNote").textContent = `${periodText} - ${layerText}`;
   el("leaderboardCount").textContent = `${leaders.length} coach`;
+  const coachTableBody = el("leaderboardCoachTable").querySelector("tbody");
+  coachTableBody.innerHTML = leaders.map((row, index) => {
+    const gap = index === 0 ? "—" : rupiah(Math.max(0, leaders[index - 1].revenue - row.revenue));
+    return `<tr><td>${index + 1}</td><td><strong>${escapeHtml(row.leader)}</strong></td><td>${escapeHtml(LEADERBOARD_TARGET_LABELS[row.primaryTeam] || row.primaryTeam)}</td><td>${row.agentCount.toLocaleString("id-ID")}</td><td>${row.txn.toLocaleString("id-ID")}</td><td>${rupiah(row.revenue)}</td><td>${rupiah(row.target)}</td><td>${percent(row.toTarget)}</td><td>${gap}</td></tr>`;
+  }).join("") || `<tr><td colspan="9" class="empty">Tidak ada coach pada filter ini.</td></tr>`;
 
   el("leaderboardPodium").hidden = leaders.length === 0;
   el("leaderboardPodium").innerHTML = podiumHtml(leaders.map(row => ({
@@ -5338,15 +5347,16 @@ function setAlbView(view) {
   el("albViewCards").hidden = view !== "cards";
 }
 
+const EXCLUDED_AGENT_NAMES = new Set(["imam nugroho", "erna erviana purnamasari", "satyadi ambia"]);
+function isExcludedAgentName(name) { return EXCLUDED_AGENT_NAMES.has(String(name || "").trim().toLowerCase()); }
+
 function renderAgentLeaderboard() {
-  const excludedLeaderboardAgents = new Set(["imam nugroho", "erna erviana purnamasari", "satyadi ambia"]);
-  const isExcludedLeaderboardAgent = name => excludedLeaderboardAgents.has(String(name || "").trim().toLowerCase());
   const ctx = modeContext("agentLeaderboardMonth", "agentLeaderboardMode", "agentLeaderboardWeek");
   const coachSet = getMultiSet("agentLeaderboardCoach");
   const agentSet = getMultiSet("agentLeaderboardAgent");
   const query = el("agentLeaderboardSearch").value.trim().toLowerCase();
   const rows = layerOneRows.filter(row =>
-    !isExcludedLeaderboardAgent(row.agent) &&
+    !isExcludedAgentName(row.agent) &&
     matchMulti(ctx.monthSet, row.month) &&
     (ctx.mode === "monthly" || ctx.weekSetEff.has(row.week)) &&
     matchMulti(coachSet, row.leader || "-") &&
@@ -5374,8 +5384,7 @@ function renderAgentLeaderboard() {
   });
   const scopeSet = new Set(ctx.scopeWeeks);
   targetRows.forEach(row => {
-    if (isExcludedLeaderboardAgent(row.agent)) return;
-    if (row.team !== "Layer 1" || !row.agent || !scopeSet.has(row.week)) return;
+    if (row.team !== "Layer 1" || !row.agent || isExcludedAgentName(row.agent) || !scopeSet.has(row.week)) return;
     if (!matchMulti(coachSet, row.leader || "-") || !matchMulti(agentSet, row.agent)) return;
     if (query && !`${row.agent} ${row.leader}`.toLowerCase().includes(query)) return;
     const key = row.agent.toLowerCase();

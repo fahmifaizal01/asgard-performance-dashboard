@@ -2263,12 +2263,16 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
   .tomorrow-plan-grid { grid-template-columns: 1fr 1fr; }
 }
 
+
+/* ASGARD: incentive belum tersedia, sembunyikan isi template lama tanpa menghapus elemen yang dibutuhkan skrip. */
+#incentivePanel > :not(.asgard-incentive-placeholder) { display:none !important; }
+.asgard-incentive-placeholder { display:block !important; margin:18px 0; padding:28px; text-align:center; background:var(--surface, #101f35); border:1px solid var(--line, #263b58); border-radius:16px; }
 </style>
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark">ET</span>
+      <span class="brand-mark">A</span>
       <div>
         <p class="eyebrow">OEC PERFORMANCE</p>
         <h1>OEC PERFORMANCE - ASGARD 2026</h1>
@@ -2296,6 +2300,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
     </nav>
 
     <section id="incentivePanel" class="tab-panel active">
+      <div class="asgard-incentive-placeholder"><p class="eyebrow">INCENTIVE TRACKER</p><h2>Data incentive belum tersedia</h2><p style="color:var(--muted);max-width:620px;margin:10px auto 0;line-height:1.7;">Bagian DS INCENTIVE ALL dikosongkan sementara. Tab ini bisa diaktifkan setelah data dan ketentuan perhitungan incentive ASGARD tersedia.</p></div>
     <div class="leaderboard-hero">
       <div>
         <p class="eyebrow">INCENTIVE TRACKER</p>
@@ -3112,6 +3117,7 @@ const WEEKLY_TARGET = 23400000;
 const WEEKLY_TARGET_BY_SCHEME = { W1: 23400000, W2: 23400000, W4: 18200000, AUG1: 23400000, AUG3: 10400000, SEP: 9000000, SEP3: 9000000, SEP4: 9000000, OCT1: 8800000 };
 const SOURCE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIb4FZu8rixfaSKBq__bM-mWuGHAbNns6xv21lDkwXCiXPaYYQfyErtmdlQ6K8FGSWOBS_d7etwK-R/pub?gid=1263546583&single=true&output=csv";
 const SOURCE_TAB_NAME = "RAW_COMBINED";
+const SOURCE_GID = "0";
 const JULY_WEEK_COUNT = 5;
 const LEADERBOARD_WEEKLY_TARGETS = {
   S2S: 128800000,
@@ -3486,7 +3492,10 @@ function parseAmount(value) {
 function parseDate(value) {
   if (value instanceof Date) return value;
   if (typeof value === "number") return new Date(Math.round((value - 25569) * 86400 * 1000));
-  const date = new Date(value);
+  const raw = String(value ?? "").trim();
+  const dmy = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+  if (dmy) { let y = Number(dmy[3]); if (y < 100) y += y >= 70 ? 1900 : 2000; const date = new Date(y, Number(dmy[2])-1, Number(dmy[1])); return Number.isNaN(date.getTime()) ? null : date; }
+  const date = new Date(raw);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -3508,10 +3517,15 @@ function normalizeWeekName(value) {
 function weekFor(weekName, weekNum) {
   const normalizedName = normalizeWeekName(weekName);
   const normalizedNum = Number(weekNum);
-  return WEEK_PERIODS.find(week =>
-    (normalizedName && week.name === normalizedName) ||
-    (Number.isFinite(normalizedNum) && week.weekNum === normalizedNum)
-  ) || null;
+  if (normalizedName.startsWith("RAW-")) {
+    const bits = normalizedName.split("-");
+    const month = bits[1] || "UNKNOWN";
+    const weekPart = bits[2] || "W0";
+    return { name: `${month} ${weekPart}`, weekNum: Number(weekPart.replace(/\D/g, "")) || normalizedNum || 0, minimum: 0, scheme: "RAW", month: month.charAt(0) + month.slice(1).toLowerCase() };
+  }
+  const exact = WEEK_PERIODS.find(week => normalizedName && week.name === normalizedName);
+  if (exact) return exact;
+  return WEEK_PERIODS.find(week => Number.isFinite(normalizedNum) && week.weekNum === normalizedNum) || null;
 }
 
 function normalizeTeam(value) {
@@ -3607,24 +3621,35 @@ function targetForLeaderTeamWeeks(leader, team, weeks) {
 
 function normalizeRows(rows) {
   const keys = {};
-  Object.keys(rows[0] || {}).forEach(key => { keys[key.trim().toLowerCase()] = key; });
-  const read = (row, name) => row[keys[name.toLowerCase()]];
-  return rows.map(row => ({
-    date: parseDate(read(row, "Date")),
-    weekName: normalizeWeekName(read(row, "Week name")),
-    weekNum: Number(read(row, "WeekNum") || read(row, "Week")),
-    invoice: String(read(row, "Invoice") || ""),
-    agent: String(read(row, "Agent Name") || "").trim(),
-    leader: String(read(row, "Leader Name") || "").trim(),
-    packageName: String(read(row, "Package Name") || "").trim(),
-    campaign: String(read(row, "Campaign") || "").trim(),
-    assignedDate: formatAssignedDate(read(row, "Assigned Date") || read(row, "assigned_date")),
-    assignedAgent: String(read(row, "Assigned Agent") || read(row, "assigned_agent") || "").trim(),
-    team: normalizeTeam(read(row, "Kategori Team") || read(row, "category team")),
-    product_type: String(read(row, "Product Type") || "").trim(),
-    product_group: String(read(row, "Product Group") || "").trim(),
-    revenue: parseAmount(read(row, "Amount")),
-  })).filter(row => row.agent && weekFor(row.weekName, row.weekNum));
+  Object.keys(rows[0] || {}).forEach(key => { keys[String(key).trim().toLowerCase()] = key; });
+  const read = (row, ...names) => {
+    for (const name of names) { const key = keys[String(name).trim().toLowerCase()]; if (key !== undefined && row[key] !== undefined && String(row[key]).trim() !== "") return row[key]; }
+    return "";
+  };
+  return rows.map(row => {
+    const date = parseDate(read(row, "Date"));
+    const weekNum = Number(read(row, "Week")) || 0;
+    const month = String(read(row, "Month") || (date ? date.toLocaleString("en-US", {month:"short", timeZone:"Asia/Jakarta"}) : "Unknown")).trim();
+    const weekName = `RAW-${month.toUpperCase()}-W${weekNum || (date ? Math.ceil(date.getDate()/7) : 0)}`;
+    const grade = String(read(row, "Grade") || "Uncategorized").trim();
+    return {
+      date, weekName, weekNum,
+      invoice: String(read(row, "Invoice", "Txn") || ""),
+      agent: String(read(row, "Agent Name") || "").trim(),
+      leader: String(read(row, "Leader Name", "SPV") || "").trim(),
+      packageName: String(read(row, "Package Name") || "").trim(),
+      campaign: String(read(row, "Campaign", "CAMPAIGN", "Campa") || "").trim(),
+      assignedDate: formatAssignedDate(read(row, "Assigned Date")),
+      assignedAgent: String(read(row, "Assigned Agent") || "").trim(),
+      team: normalizeTeam(grade),
+      product_type: String(read(row, "Product Type", "PRODUCT") || "").trim(),
+      product_group: String(read(row, "PRODUCT") || "").trim(),
+      revenue: parseAmount(read(row, "Amount")),
+      status: String(read(row, "Txn Status", "Status") || "").trim(),
+      category: String(read(row, "Category") || "").trim(),
+      grade, rawMonth: month
+    };
+  }).filter(row => row.agent);
 }
 
 function buildDodolanRows(rows) {
@@ -3699,7 +3724,14 @@ async function loadWorkbook(buffer) {
 }
 
 function loadCsv(text) {
-  const [headers, ...lines] = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim() !== "").map(parseCsvLine);
+  const [rawHeaders, ...lines] = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim() !== "").map(parseCsvLine);
+  const seen = new Map();
+  const headers = rawHeaders.map((header, index) => {
+    const base = String(header || `Kolom ${index + 1}`).trim();
+    const count = (seen.get(base.toLowerCase()) || 0) + 1;
+    seen.set(base.toLowerCase(), count);
+    return count === 1 ? base : `${base}__${count}`;
+  });
   const rows = lines.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
   if (!rows.length) throw new Error("Sheet RAW tidak memiliki data.");
   loadRows(rows, SOURCE_TAB_NAME, []);
@@ -3740,11 +3772,11 @@ function loadRows(rows, sheetName, targetSheetRows = []) {
     row.product = productBucket(row);
   });
   allTransactionRows = normalized;
-  layerOneRows = normalized.filter(row => row.team.toLowerCase() === "layer 1");
+  layerOneRows = normalized;
   summary = calculate(layerOneRows);
   dodolanRows = buildDodolanRows(layerOneRows);
   leaderboardRows = buildDodolanRows(normalized);
-  if (!summary.length) throw new Error("Tidak ada transaksi Layer 1 pada periode yang tersedia.");
+  if (!normalized.length) throw new Error("Tidak ada transaksi yang dapat dibaca dari sheet ASGARD.");
   prepareDashboard(sheetName, rows.length);
 }
 
@@ -3822,7 +3854,7 @@ function availableMonths() {
     const rowMonth = row.month || WEEK_PERIODS.find(item => item.name === (row.week || weekFor(row.weekName, row.weekNum)?.name))?.month;
     if (rowMonth) months.add(rowMonth);
   });
-  return WEEK_PERIODS.map(week => week.month).filter((month, index, list) => list.indexOf(month) === index && months.has(month));
+  return [...months];
 }
 
 function monthOptions(months) {
@@ -3836,7 +3868,7 @@ function availableWeeks(month = "all") {
     const rowMonth = row.month || WEEK_PERIODS.find(item => item.name === week)?.month;
     if (week && (month === "all" || rowMonth === month)) weeks.add(week);
   });
-  return WEEK_PERIODS.map(week => week.name).filter(week => weeks.has(week));
+  return [...weeks];
 }
 
 function targetWeeksForMonth(month = "all") {
@@ -4669,7 +4701,7 @@ function renderLeaderboard() {
   const coachSet = getMultiSet("leaderboardCoachFilter");
   const byLeader = new Map();
   leaderboardRows.forEach(row => {
-    if (!LEADERBOARD_WEEKLY_TARGETS[row.team]) return;
+    
     if (!matchMulti(monthSet, row.month) || !matchMulti(weekSet, row.week) || !matchMulti(layerSet, row.team) || !matchMulti(coachSet, row.leader || "-")) return;
     const leader = row.leader || "-";
     if (!byLeader.has(leader)) byLeader.set(leader, { leader, revenue: 0, target: 0, txn: 0, agents: new Set(), products: {}, teams: {} });
@@ -6055,24 +6087,14 @@ function showToast(message) {
 }
 
 async function loadFromGoogleSheet() {
-  el("dataStatus").textContent = "Memuat data Google Sheets...";
+  el("dataStatus").textContent = "Memuat data Google Sheets ASGARD...";
   try {
-    const separator = SOURCE_CSV_URL.includes("?") ? "&" : "?";
-    const response = await fetch(`${SOURCE_CSV_URL}${separator}_=${Date.now()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`CSV Google Sheets tidak dapat diakses (HTTP ${response.status}).`);
+    const response = await fetch(`${SOURCE_CSV_URL}${SOURCE_CSV_URL.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Google Sheets tidak dapat diakses (HTTP ${response.status}). Pastikan tab RAW dipublikasikan sebagai CSV.`);
     const csvText = await response.text();
-    if (!csvText.trim() || /<html[\s>]/i.test(csvText.slice(0, 300))) {
-      throw new Error("Google Sheets tidak mengembalikan CSV. Pastikan tab sudah dipublikasikan sebagai CSV.");
-    }
+    if (!csvText.trim() || /<html[\s>]/i.test(csvText.slice(0, 300))) throw new Error("Google Sheets tidak mengembalikan CSV. Periksa pengaturan publikasi sheet.");
     loadCsv(csvText);
-    el("dataStatus").textContent = `Data terhubung · ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
-    el("dataStatus").classList.add("ready");
-  } catch (error) {
-    el("dataStatus").textContent = "Gagal memuat data";
-    el("dataStatus").classList.remove("ready");
-    showToast(`${error.message} Cek publikasi CSV dan nama kolom RAW.`);
-    console.error("Gagal memuat CSV ASGARD:", error);
-  }
+  } catch (error) { el("dataStatus").textContent = "Gagal memuat data"; showToast(error.message); console.error(error); }
 }
 
 function exportResults() {
@@ -6240,7 +6262,6 @@ el("trendSearchFilter").addEventListener("input", renderTrendPanel);
 el("compareSearch").exportResults;
 el("exportButton").addEventListener("click", exportResults);
 loadFromGoogleSheet();
-setInterval(loadFromGoogleSheet, 5 * 60 * 1000);
 </script>
 </body>
 </html>

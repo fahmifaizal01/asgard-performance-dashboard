@@ -3518,15 +3518,17 @@ function normalizeWeekName(value) {
 function weekFor(weekName, weekNum) {
   const normalizedName = normalizeWeekName(weekName);
   const normalizedNum = Number(weekNum);
+  const exact = WEEK_PERIODS.find(week => normalizedName && week.name === normalizedName);
+  if (exact) return exact;
+  const byNumber = WEEK_PERIODS.find(week => Number.isFinite(normalizedNum) && normalizedNum > 0 && week.weekNum === normalizedNum);
+  if (byNumber) return byNumber;
   if (normalizedName.startsWith("RAW-")) {
     const bits = normalizedName.split("-");
     const month = bits[1] || "UNKNOWN";
     const weekPart = bits[2] || "W0";
     return { name: `${month} ${weekPart}`, weekNum: Number(weekPart.replace(/\D/g, "")) || normalizedNum || 0, minimum: 0, scheme: "RAW", month: month.charAt(0) + month.slice(1).toLowerCase() };
   }
-  const exact = WEEK_PERIODS.find(week => normalizedName && week.name === normalizedName);
-  if (exact) return exact;
-  return WEEK_PERIODS.find(week => Number.isFinite(normalizedNum) && week.weekNum === normalizedNum) || null;
+  return null;
 }
 
 function normalizeTeam(value) {
@@ -3597,7 +3599,7 @@ function normalizeTargetRows(rows) {
     return "";
   };
   const monthKey = value => {
-    const v = String(value || "").trim().toUpperCase().replace(/\\./g,"");
+    const v = String(value || "").trim().toUpperCase().replace(/\./g,"");
     const aliases = { JAN:"JAN", JANUARI:"JAN", FEB:"FEB", FEBRUARI:"FEB", MAR:"MAR", MARET:"MAR", APR:"APR", APRIL:"APR", MAY:"MAY", MEI:"MAY", JUN:"JUN", JUNI:"JUN", JUL:"JUL", JULI:"JUL", AUG:"AUG", AGU:"AUG", AGUSTUS:"AUG", SEP:"SEP", SEPTEMBER:"SEP", OCT:"OCT", OKT:"OCT", OKTOBER:"OCT", NOV:"NOV", NOVEMBER:"NOV", DEC:"DEC", DES:"DEC", DESEMBER:"DEC" };
     return aliases[v] || aliases[v.slice(0,3)] || v.slice(0,3);
   };
@@ -3606,13 +3608,14 @@ function normalizeTargetRows(rows) {
     const leader = String(read(row,"Coach","Leader Name","Leader","Nama Coach","Team Leader") || "").trim();
     const spv = String(read(row,"SPV","Supervisor","Nama SPV") || "").trim();
     const teamRaw = read(row,"Status Agent","Status","Layer","Kategori","Team","Kategori Team");
-    const rawTeam = String(teamRaw || "").trim().toUpperCase().replace(/\\s+/g," ");
+    const rawTeam = String(teamRaw || "").trim().toUpperCase().replace(/\s+/g," ");
     const team = rawTeam === "LAYER 1" ? "Layer 1" : rawTeam === "LAYER 2" ? "Layer 2" : rawTeam === "S2S" ? "S2S" : normalizeTeam(teamRaw);
     const weekRaw = read(row,"Week","WeekNum","Week Number","Minggu","Week Name");
     const monthRaw = read(row,"Month","Bulan","Month Name");
-    const weekNum = Number(String(weekRaw).match(/\\d+/)?.[0] || 0);
+    const weekNum = Number(String(weekRaw).match(/\d+/)?.[0] || 0);
     const month = String(monthRaw || "").trim();
-    const week = month && weekNum ? `RAW-${monthKey(month)}-W${weekNum}` : (weekFor("", weekNum)?.name || "");
+    const canonicalWeek = WEEK_PERIODS.find(item => item.weekNum === weekNum);
+    const week = canonicalWeek?.name || (month && weekNum ? `RAW-${monthKey(month)}-W${weekNum}` : "");
     const target = parseAmount(read(row,"Target","Target Revenue","Target Amount","Target Mingguan","Target Bulanan","Target/Week"));
     return { agent, leader, spv, team, week, weekNum, month, target };
   }).filter(row => row.agent && row.week && ["Layer 1","Layer 2","S2S"].includes(row.team));
@@ -3646,7 +3649,7 @@ function normalizeRows(rows) {
     const date = parseDate(read(row, "Date"));
     const weekNum = Number(read(row, "Week")) || 0;
     const month = String(read(row, "Month") || (date ? date.toLocaleString("en-US", {month:"short", timeZone:"Asia/Jakarta"}) : "Unknown")).trim();
-    const monthRawKey = String(month || "").trim().toUpperCase().replace(/\\./g,"").slice(0,3);
+    const monthRawKey = String(month || "").trim().toUpperCase().replace(/\./g,"").slice(0,3);
     const monthKey = ({OKT:"OCT",AGU:"AUG",DES:"DEC"})[monthRawKey] || monthRawKey;
     const weekName = `RAW-${monthKey}-W${weekNum || (date ? Math.ceil(date.getDate()/7) : 0)}`;
     const grade = String(read(row, "Grade") || "Uncategorized").trim();
@@ -3802,7 +3805,7 @@ function prepareDashboard(sheetName, rawCount) {
   el("emptyState").hidden = true;
   el("dashboard").hidden = false;
   el("exportButton").disabled = false;
-  el("dataStatus").textContent = `Update ${formatUpdateTime(new Date())}`;
+  el("dataStatus").textContent = `LAST UPDATE · ${formatUpdateTime(new Date())}`;
   el("dataStatus").classList.add("ready");
   const months = availableMonths();
   ["actionMonthFilter", "trendMonthFilter"].forEach(id => {
@@ -3887,7 +3890,16 @@ function availableWeeks(month = "all") {
     const rowMonth = row.month || WEEK_PERIODS.find(item => item.name === week)?.month;
     if (week && (month === "all" || rowMonth === month)) weeks.add(week);
   });
-  return [...weeks];
+  // Keep period selectors populated from the official week scheme, even if a tab has no rows in the current filter.
+  WEEK_PERIODS.forEach(item => { if (month === "all" || item.month === month) weeks.add(item.name); });
+  return [...weeks].sort((a,b) => {
+    const ai = WEEK_PERIODS.findIndex(item => item.name === a);
+    const bi = WEEK_PERIODS.findIndex(item => item.name === b);
+    if (ai >= 0 && bi >= 0) return ai-bi;
+    if (ai >= 0) return -1;
+    if (bi >= 0) return 1;
+    return a.localeCompare(b);
+  });
 }
 
 function targetWeeksForMonth(month = "all") {
@@ -4831,7 +4843,7 @@ function canonicalSpv(spv) {
 function getTargetMetaMap(monthSet, weekSet) {
   const map = new Map();
   const monthFromWeek = week => {
-    const match = String(week || "").match(/^RAW-([A-Z]{3})-W(\\d+)$/);
+    const match = String(week || "").match(/^RAW-([A-Z]{3})-W(\d+)$/);
     if (!match) return WEEK_PERIODS.find(item => item.name === week)?.month || "";
     const names = { JAN:"Jan", FEB:"Feb", MAR:"Mar", APR:"Apr", MAY:"May", JUN:"Jun", JUL:"Jul", AUG:"Agu", SEP:"Sep", OCT:"Okt", NOV:"Nov", DEC:"Des" };
     return names[match[1]] || match[1];
@@ -6133,7 +6145,7 @@ function showToast(message) {
 
 async function loadFromGoogleSheet() {
   const status = el("dataStatus");
-  status.textContent = "Menghubungkan ke Google Sheets ASGARD…";
+  status.textContent = "LAST UPDATE · menghubungkan…";
   status.classList.remove("ready");
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
@@ -6146,16 +6158,16 @@ async function loadFromGoogleSheet() {
     return csv;
   };
   try {
-    status.textContent = "Mengambil data RAW dan TARGET ALL AGENT…";
+    status.textContent = "LAST UPDATE · mengambil data…";
     const [rawCsv, targetCsv] = await Promise.all([getCsv(SOURCE_CSV_URL,"RAW ASGARD"), getCsv(TARGET_CSV_URL,"TARGET ALL AGENT")]);
     if (!rawCsv.includes("Agent Name") || !rawCsv.includes("Amount")) throw new Error("CSV RAW terbuka, tetapi header Agent Name / Amount tidak ditemukan.");
     const targetRows = parseCsvObjects(targetCsv);
     const usableTargets = normalizeTargetRows(targetRows);
     if (!usableTargets.length) console.warn("TARGET ALL AGENT terbaca, tetapi belum ada baris target yang cocok. Periksa nama header/status agent.", Object.keys(targetRows[0] || {}));
-    status.textContent = `Data diterima · ${usableTargets.length.toLocaleString("id-ID")} target agent · menghitung…`;
+    status.textContent = `LAST UPDATE · data diterima, menghitung…`;
     loadCsv(rawCsv, targetRows);
   } catch (error) {
-    status.textContent = error.name === "AbortError" ? "Koneksi timeout (90 detik)" : "Gagal memuat data";
+    status.textContent = `LAST UPDATE · gagal (${error.name === "AbortError" ? "timeout" : "cek sumber data"})`;
     showToast(error.name === "AbortError" ? "Google Sheets terlalu lama merespons. Periksa publikasi CSV." : error.message);
     console.error("Gagal memuat Google Sheets ASGARD:", error);
   } finally {

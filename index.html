@@ -2872,8 +2872,8 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
       <div class="leaderboard-hero agent-hero">
         <div>
           <p class="eyebrow">TEAM COMPARISON</p>
-          <h2>Arif Pambudi vs Coach Pembanding</h2>
-          <p>Bandingkan tim Arif Pambudi dengan satu atau beberapa tim coach lain: revenue, pencapaian target, dan ranking 12 agent teratas.</p>
+          <h2>Compare Team</h2>
+          <p>Pilih tim coach yang ingin dibandingkan. Hasil akan tampil setelah pilihan dibuat.</p>
         </div>
         <div class="hero-number">
           <span>Total Revenue</span>
@@ -3312,7 +3312,7 @@ let layerOneRows = [];
 let allTransactionRows = [];
 let targetRows = [];
 let selectedKey = "";
-const SPV_ORDER = ["Deti Laharwati", "Yulfan Prihartanto", "Mark Johannes Hilman"];
+const SPV_ORDER = [];
 const PRODUCT_FAMILY_ORDER = ["BAON", "Ruangguru Private", "Ruangbelajar", "Brain Academy", "Others"];
 
 const el = id => document.getElementById(id);
@@ -3596,30 +3596,33 @@ function normalizeTargetRows(rows) {
     }
     return "";
   };
-  const monthKey = value => String(value || "").trim().toUpperCase().replace(/\./g,"").slice(0,3);
+  const monthKey = value => {
+    const v = String(value || "").trim().toUpperCase().replace(/\\./g,"");
+    const aliases = { JAN:"JAN", JANUARI:"JAN", FEB:"FEB", FEBRUARI:"FEB", MAR:"MAR", MARET:"MAR", APR:"APR", APRIL:"APR", MAY:"MAY", MEI:"MAY", JUN:"JUN", JUNI:"JUN", JUL:"JUL", JULI:"JUL", AUG:"AUG", AGU:"AUG", AGUSTUS:"AUG", SEP:"SEP", SEPTEMBER:"SEP", OCT:"OCT", OKT:"OCT", OKTOBER:"OCT", NOV:"NOV", NOVEMBER:"NOV", DEC:"DEC", DES:"DEC", DESEMBER:"DEC" };
+    return aliases[v] || aliases[v.slice(0,3)] || v.slice(0,3);
+  };
   return rows.map(row => {
-    const agent = String(read(row,"Agent Name","Agent","Nama Agent","Nama Agen") || "").trim();
-    const leader = String(read(row,"Coach","Leader Name","Leader","Nama Coach") || "").trim();
-    const spv = String(read(row,"SPV","Supervisor") || "").trim();
+    const agent = String(read(row,"Agent Name","Agent","Nama Agent","Nama Agen","Nama") || "").trim();
+    const leader = String(read(row,"Coach","Leader Name","Leader","Nama Coach","Team Leader") || "").trim();
+    const spv = String(read(row,"SPV","Supervisor","Nama SPV") || "").trim();
     const teamRaw = read(row,"Status Agent","Status","Layer","Kategori","Team","Kategori Team");
-    const team = normalizeTeam(teamRaw);
-    const weekRaw = read(row,"Week","WeekNum","Week Number","Minggu");
+    const rawTeam = String(teamRaw || "").trim().toUpperCase().replace(/\\s+/g," ");
+    const team = rawTeam === "LAYER 1" ? "Layer 1" : rawTeam === "LAYER 2" ? "Layer 2" : rawTeam === "S2S" ? "S2S" : normalizeTeam(teamRaw);
+    const weekRaw = read(row,"Week","WeekNum","Week Number","Minggu","Week Name");
     const monthRaw = read(row,"Month","Bulan","Month Name");
-    const weekNum = Number(String(weekRaw).match(/\d+/)?.[0] || 0);
+    const weekNum = Number(String(weekRaw).match(/\\d+/)?.[0] || 0);
     const month = String(monthRaw || "").trim();
-    let week = "";
-    if (month && weekNum) week = `RAW-${monthKey(month)}-W${weekNum}`;
-    else if (weekNum) week = weekFor("", weekNum)?.name || "";
-    const target = parseAmount(read(row,"Target","Target Revenue","Target Amount","Target Mingguan","Target Bulanan"));
+    const week = month && weekNum ? `RAW-${monthKey(month)}-W${weekNum}` : (weekFor("", weekNum)?.name || "");
+    const target = parseAmount(read(row,"Target","Target Revenue","Target Amount","Target Mingguan","Target Bulanan","Target/Week"));
     return { agent, leader, spv, team, week, weekNum, month, target };
-  }).filter(row => row.agent && row.week && row.target >= 0 && ["Layer 1","Layer 2","S2S"].includes(row.team));
+  }).filter(row => row.agent && row.week && ["Layer 1","Layer 2","S2S"].includes(row.team));
 }
 
 function targetForAgentWeek(agent, week) {
   const key = String(agent || "").trim().toLowerCase();
-  const found = targetRows.find(row => row.agent.toLowerCase() === key && row.week === week?.name);
+  const found = targetRows.find(row => row.agent.toLowerCase() === key && (row.week === week?.name || row.week === week?.rawName));
   if (!found) return targetRows.length ? 0 : weeklyTargetForWeek(week);
-  return week?.scheme === "AUG3" && found.team === "Layer 1" ? weeklyTargetForWeek(week) : found.target;
+  return found.target;
 }
 
 function targetForLeaderTeamWeeks(leader, team, weeks) {
@@ -3638,11 +3641,14 @@ function normalizeRows(rows) {
     for (const name of names) { const key = keys[String(name).trim().toLowerCase()]; if (key !== undefined && row[key] !== undefined && String(row[key]).trim() !== "") return row[key]; }
     return "";
   };
+  const dataStart = new Date(2026, 5, 29); // Mulai dari W1 Juli (W27), 29 Juni 2026
   return rows.map(row => {
     const date = parseDate(read(row, "Date"));
     const weekNum = Number(read(row, "Week")) || 0;
     const month = String(read(row, "Month") || (date ? date.toLocaleString("en-US", {month:"short", timeZone:"Asia/Jakarta"}) : "Unknown")).trim();
-    const weekName = `RAW-${month.toUpperCase()}-W${weekNum || (date ? Math.ceil(date.getDate()/7) : 0)}`;
+    const monthRawKey = String(month || "").trim().toUpperCase().replace(/\\./g,"").slice(0,3);
+    const monthKey = ({OKT:"OCT",AGU:"AUG",DES:"DEC"})[monthRawKey] || monthRawKey;
+    const weekName = `RAW-${monthKey}-W${weekNum || (date ? Math.ceil(date.getDate()/7) : 0)}`;
     const grade = String(read(row, "Grade") || "Uncategorized").trim();
     return {
       date, weekName, weekNum,
@@ -3661,7 +3667,7 @@ function normalizeRows(rows) {
       category: String(read(row, "Category") || "").trim(),
       grade, rawMonth: month
     };
-  }).filter(row => row.agent);
+  }).filter(row => row.agent && row.date && row.date >= dataStart);
 }
 
 function buildDodolanRows(rows) {
@@ -3829,9 +3835,9 @@ function prepareDashboard(sheetName, rawCount) {
   setMultiOptions("trendCoachFilter", layerOneLeaders);
   const arifName = layerOneLeaders.find(leader => leader.toLowerCase() === "arif pambudi");
   if (arifName && !getMulti("trendCoachFilter").length) setMultiSelected("trendCoachFilter", [arifName]);
-  const compareOptions = leaders.filter(leader => leader.toLowerCase() !== "arif pambudi");
+  const compareOptions = leaders;
   setMultiOptions("compareCoach", compareOptions);
-  if (!getMulti("compareCoach").length && compareOptions.length) setMultiSelected("compareCoach", [compareOptions[0]]);
+  setMultiSelected("compareCoach", []);
   syncAgentMulti("incAgentFilter", layerOneRows, "incCoachFilter");
   syncAgentMulti("dodolanAgentFilter", dodolanRows, "dodolanLeaderFilter");
   syncAgentMulti("agentLeaderboardAgent", layerOneRows, "agentLeaderboardCoach");
@@ -3845,7 +3851,8 @@ function prepareDashboard(sheetName, rawCount) {
   setMultiOptions("topCampaignProduct", [...new Set(allTransactionRows.map(row => row.product))].sort(byName));
   setMultiOptions("leaderboardLayerFilter", Object.keys(LEADERBOARD_WEEKLY_TARGETS));
   setMultiOptions("leaderboardCoachFilter", [...new Set(leaderboardRows.filter(row => LEADERBOARD_WEEKLY_TARGETS[row.team]).map(row => row.leader || "-"))].sort(byName));
-  setMultiOptions("spvSpvFilter", SPV_ORDER);
+  const latestSpvNames = [...new Set(targetRows.filter(row => row.spv).map(row => canonicalSpv(row.spv)))].sort(byName);
+  setMultiOptions("spvSpvFilter", latestSpvNames);
   syncSpvFilters();
   updateTopCampaignAgentOptions();
   showToast(`Data dari ${sheetName} berhasil dihitung.`);
@@ -4823,17 +4830,37 @@ function canonicalSpv(spv) {
 
 function getTargetMetaMap(monthSet, weekSet) {
   const map = new Map();
+  const monthFromWeek = week => {
+    const match = String(week || "").match(/^RAW-([A-Z]{3})-W(\\d+)$/);
+    if (!match) return WEEK_PERIODS.find(item => item.name === week)?.month || "";
+    const names = { JAN:"Jan", FEB:"Feb", MAR:"Mar", APR:"Apr", MAY:"May", JUN:"Jun", JUL:"Jul", AUG:"Agu", SEP:"Sep", OCT:"Okt", NOV:"Nov", DEC:"Des" };
+    return names[match[1]] || match[1];
+  };
+  const monthMatches = (selected, actual) => {
+    if (!selected || !selected.size) return true;
+    const norm = value => {
+      const key = String(value || "").trim().toUpperCase().slice(0,3);
+      return ({OKT:"OCT",AGU:"AUG",DES:"DEC"})[key] || key;
+    };
+    return [...selected].some(value => norm(value) === norm(actual));
+  };
+  const filtered = targetRows.filter(row => row.agent && matchMulti(weekSet, row.week) && monthMatches(monthSet, row.month || monthFromWeek(row.week)));
+  const monthOrder = { JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,AGU:8,SEP:9,OCT:10,OKT:10,NOV:11,DEC:12,DES:12 };
+  const latestByAgent = new Map();
   targetRows.forEach(row => {
-    if (!row.agent) return;
-    const rowMonth = WEEK_PERIODS.find(week => week.name === row.week)?.month;
-    if (!matchMulti(weekSet, row.week) || !matchMulti(monthSet, rowMonth)) return;
     const key = row.agent.toLowerCase();
-    if (!map.has(key)) map.set(key, { agent: row.agent, leader: row.leader, spv: canonicalSpv(row.spv), target: 0, weeks: new Set() });
+    const monthKey = String(row.month || monthFromWeek(row.week)).trim().toUpperCase().slice(0,3);
+    const order = (monthOrder[monthKey] || 0) * 100 + (row.weekNum || 0);
+    const prior = latestByAgent.get(key);
+    if (!prior || order >= prior.order) latestByAgent.set(key, { row, order });
+  });
+  filtered.forEach(row => {
+    const key = row.agent.toLowerCase();
+    const latest = latestByAgent.get(key)?.row || row;
+    if (!map.has(key)) map.set(key, { agent: row.agent, leader: latest.leader || row.leader, spv: canonicalSpv(latest.spv), team: latest.team, target: 0, weeks: new Set() });
     const item = map.get(key);
     item.target += row.target;
     item.weeks.add(row.week);
-    if (!item.leader && row.leader) item.leader = row.leader;
-    if (!item.spv || item.spv === "Tanpa SPV") item.spv = canonicalSpv(row.spv);
   });
   return map;
 }
@@ -4868,7 +4895,7 @@ function addProductTotal(products, bucket, revenue) {
 }
 
 function isMainSpv(spv) {
-  return SPV_ORDER.some(name => name.toLowerCase() === String(spv || "").trim().toLowerCase());
+  return Boolean(String(spv || "").trim()) && String(spv).trim().toLowerCase() !== "tanpa spv";
 }
 
 function spvSort(a, b) {
@@ -5388,14 +5415,26 @@ function renderCompareTeam() {
   const ctx = modeContext("compareMonth", "compareMode", "compareWeek");
   ctx.query = el("compareSearch").value.trim().toLowerCase();
   const compareCoaches = getMulti("compareCoach");
-  const arifAgents = aggregateAgentsByCoach(layerOneRows, "Arif Pambudi", ctx);
-  const groups = [{ coach: "Arif Pambudi", agents: arifAgents }, ...compareCoaches.map(coach => ({ coach, agents: aggregateAgentsByCoach(layerOneRows, coach, ctx) }))];
+  if (!compareCoaches.length) {
+    el("compareTotalRevenue").textContent = rupiah(0);
+    el("compareAgentKpi").textContent = "0";
+    el("compareTxnKpi").textContent = "0";
+    el("compareTxnNote").textContent = ctx.periodText;
+    el("compareTopAgentKpi").textContent = "-";
+    el("compareTopRevenueKpi").textContent = "Rp0";
+    el("compareTotalToTargetKpi").textContent = "0%";
+    el("compareCount").textContent = "0 tim";
+    el("compareCaption").textContent = `${ctx.periodText} - pilih coach untuk dibandingkan`;
+    el("compareSummary").innerHTML = `<div class="detail-empty">Pilih satu atau beberapa coach pada filter “Compare dengan” untuk menampilkan perbandingan.</div>`;
+    el("compareList").innerHTML = "";
+    return;
+  }
+  const groups = compareCoaches.map(coach => ({ coach, agents: aggregateAgentsByCoach(layerOneRows, coach, ctx) }));
   const allAgents = groups.flatMap(group => group.agents);
   const totalRevenue = allAgents.reduce((sum, row) => sum + row.revenue, 0);
   const totalTarget = allAgents.reduce((sum, row) => sum + ctx.targetForAgent(row.agent), 0);
   const totalTxn = allAgents.reduce((sum, row) => sum + row.txn, 0);
   const top = [...allAgents].sort((a, b) => b.revenue - a.revenue)[0];
-
   el("compareTotalRevenue").textContent = rupiah(totalRevenue);
   el("compareAgentKpi").textContent = allAgents.length.toLocaleString("id-ID");
   el("compareTxnKpi").textContent = totalTxn.toLocaleString("id-ID");
@@ -5404,13 +5443,12 @@ function renderCompareTeam() {
   el("compareTopRevenueKpi").textContent = top ? `${top.leader} - ${rupiah(top.revenue)}` : "Rp0";
   el("compareTotalToTargetKpi").textContent = totalTarget ? percent(totalRevenue / totalTarget) : "0%";
   el("compareCount").textContent = `${groups.map(group => group.agents.length).join(" vs ")} agent`;
-  el("compareCaption").textContent = `${ctx.periodText} - Arif Pambudi vs ${compareCoaches.length ? compareCoaches.join(", ") : "(pilih coach pembanding)"}`;
-
+  el("compareCaption").textContent = `${ctx.periodText} - ${compareCoaches.join(" vs ")}`;
   const summaries = groups.map((group, index) => {
     const revenue = group.agents.reduce((sum, row) => sum + row.revenue, 0);
     const target = group.agents.reduce((sum, row) => sum + ctx.targetForAgent(row.agent), 0);
     const txn = group.agents.reduce((sum, row) => sum + row.txn, 0);
-    return { ...group, revenue, target, txn, pct: target ? revenue / target : 0, color: LEADER_COLORS[(index + 2) % LEADER_COLORS.length], avg: group.agents.length ? revenue / group.agents.length : 0 };
+    return { ...group, revenue, target, txn, pct: target ? revenue / target : 0, color: LEADER_COLORS[index % LEADER_COLORS.length], avg: group.agents.length ? revenue / group.agents.length : 0 };
   });
   const leadRevenue = Math.max(...summaries.map(item => item.revenue), 0);
   const base = summaries[0];
@@ -5423,15 +5461,10 @@ function renderCompareTeam() {
         <div class="cmp-top"><span class="avatar">${escapeHtml(initialsOf(item.coach))}</span><div><strong>${escapeHtml(item.coach)}</strong><small>${item.agents.length} agent - ${item.txn.toLocaleString("id-ID")} TXN</small></div></div>
         <div class="cmp-revenue">${rupiah(item.revenue)}</div>
         <div class="meter"><i style="width:${Math.min(100, Math.max(2, item.pct * 100))}%;background:${TONE_COLORS[toneFor(item.pct)]}"></i></div>
-        <div class="cmp-stats">
-          <div><span>Target</span><b>${percent(item.pct)}</b></div>
-          <div><span>Rata-rata / agent</span><b>${compactRupiah(item.avg)}</b></div>
-          <div><span>Agent #1</span><b>${escapeHtml(item.agents[0]?.agent || "-")}</b></div>
-        </div>
+        <div class="cmp-stats"><div><span>Target</span><b>${percent(item.pct)}</b></div><div><span>Rata-rata / agent</span><b>${compactRupiah(item.avg)}</b></div><div><span>Agent #1</span><b>${escapeHtml(item.agents[0]?.agent || "-")}</b></div></div>
         ${diff === null ? "" : `<div class="cmp-diff ${diff >= 0 ? "up" : "down"}">${diff >= 0 ? "Unggul" : "Tertinggal"} ${compactRupiah(Math.abs(diff))} dari ${escapeHtml(base.coach)}</div>`}
       </article>`;
   }).join("");
-
   el("compareList").innerHTML = summaries.map(item => renderTeamColumn(item.coach, item.agents, row => ctx.targetForAgent(row.agent), ctx, item.color)).join("");
 }
 

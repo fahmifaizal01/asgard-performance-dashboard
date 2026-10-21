@@ -3692,7 +3692,7 @@ function normalizeRows(rows) {
       category: String(read(row, "Category") || "").trim(),
       grade, rawMonth: month
     };
-  }).filter(row => row.agent && row.date && row.date >= dataStart);
+  }).filter(row => row.agent && row.date && row.date >= dataStart && ["Layer 1", "Layer 2", "Prompter Inbound"].includes(row.team));
 }
 
 function buildDodolanRows(rows) {
@@ -5407,14 +5407,21 @@ const EXCLUDED_AGENT_NAMES = new Set([
 ]);
 const EXCLUDED_COACH_NAMES = new Set(["zulfa nailis suroyya wira wijayani", "asri damayanti"]);
 function normalizedPersonName(name) {
-  return String(name || "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").trim().toLowerCase().replace(/\\s+/g, " ");
+  return String(name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 function isExcludedAgentName(name) {
-  const normalized = normalizedPersonName(name);
-  return EXCLUDED_AGENT_NAMES.has(normalized) || [...EXCLUDED_AGENT_NAMES].some(excluded => normalized.startsWith(excluded + " ") || normalized.includes(" " + excluded + " "));
+  const normalized = normalizedPersonName(name).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  return EXCLUDED_AGENT_NAMES.has(normalized) || [...EXCLUDED_AGENT_NAMES].some(excluded => {
+    const candidate = excluded.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    return normalized === candidate || normalized.startsWith(candidate + " ") || normalized.includes(" " + candidate + " ");
+  });
 }
 function isExcludedCoachName(name) {
-  return EXCLUDED_COACH_NAMES.has(normalizedPersonName(name));
+  const normalized = normalizedPersonName(name).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  return [...EXCLUDED_COACH_NAMES].some(excluded => {
+    const candidate = excluded.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    return normalized === candidate || normalized.startsWith(candidate + " ");
+  });
 }
 
 function renderAgentLeaderboard() {

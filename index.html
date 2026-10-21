@@ -2271,7 +2271,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
       <span class="brand-mark">ET</span>
       <div>
         <p class="eyebrow">OEC PERFORMANCE</p>
-        <h1>Support EL TORO</h1>
+        <h1>OEC PERFORMANCE - ASGARD 2026</h1>
       </div>
     </div>
     <div class="top-actions">
@@ -3110,9 +3110,8 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
   <script>
 const WEEKLY_TARGET = 23400000;
 const WEEKLY_TARGET_BY_SCHEME = { W1: 23400000, W2: 23400000, W4: 18200000, AUG1: 23400000, AUG3: 10400000, SEP: 9000000, SEP3: 9000000, SEP4: 9000000, OCT1: 8800000 };
-const SOURCE_SHEET_ID = "1ksRXPpPbNAcmWbqWYajVLr9RWHkt7JVIGm98iOjiG-0";
+const SOURCE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIb4FZu8rixfaSKBq__bM-mWuGHAbNns6xv21lDkwXCiXPaYYQfyErtmdlQ6K8FGSWOBS_d7etwK-R/pub?gid=1263546583&single=true&output=csv";
 const SOURCE_TAB_NAME = "RAW_COMBINED";
-const SOURCE_GID = "0";
 const JULY_WEEK_COUNT = 5;
 const LEADERBOARD_WEEKLY_TARGETS = {
   S2S: 128800000,
@@ -6056,17 +6055,23 @@ function showToast(message) {
 }
 
 async function loadFromGoogleSheet() {
-  el("dataStatus").textContent = "Memuat data...";
+  el("dataStatus").textContent = "Memuat data Google Sheets...";
   try {
-    const response = await fetch(
-      `https://docs.google.com/spreadsheets/d/${SOURCE_SHEET_ID}/export?format=xlsx&_=${Date.now()}`,
-      { cache: "no-store" }
-    );
-    if (!response.ok) throw new Error("Google Sheet tidak dapat diakses. Pastikan link dibuka untuk publik.");
-    await loadWorkbook(await response.arrayBuffer());
+    const separator = SOURCE_CSV_URL.includes("?") ? "&" : "?";
+    const response = await fetch(`${SOURCE_CSV_URL}${separator}_=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`CSV Google Sheets tidak dapat diakses (HTTP ${response.status}).`);
+    const csvText = await response.text();
+    if (!csvText.trim() || /<html[\s>]/i.test(csvText.slice(0, 300))) {
+      throw new Error("Google Sheets tidak mengembalikan CSV. Pastikan tab sudah dipublikasikan sebagai CSV.");
+    }
+    loadCsv(csvText);
+    el("dataStatus").textContent = `Data terhubung · ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
+    el("dataStatus").classList.add("ready");
   } catch (error) {
     el("dataStatus").textContent = "Gagal memuat data";
-    showToast(error.message);
+    el("dataStatus").classList.remove("ready");
+    showToast(`${error.message} Cek publikasi CSV dan nama kolom RAW.`);
+    console.error("Gagal memuat CSV ASGARD:", error);
   }
 }
 
@@ -6235,6 +6240,7 @@ el("trendSearchFilter").addEventListener("input", renderTrendPanel);
 el("compareSearch").exportResults;
 el("exportButton").addEventListener("click", exportResults);
 loadFromGoogleSheet();
+setInterval(loadFromGoogleSheet, 5 * 60 * 1000);
 </script>
 </body>
 </html>

@@ -6145,7 +6145,7 @@ function showToast(message) {
 
 async function loadFromGoogleSheet() {
   const status = el("dataStatus");
-  status.textContent = "LAST UPDATE · menghubungkan…";
+  status.textContent = "LOADING DATA…";
   status.classList.remove("ready");
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
@@ -6158,16 +6158,16 @@ async function loadFromGoogleSheet() {
     return csv;
   };
   try {
-    status.textContent = "LAST UPDATE · mengambil data…";
+    status.textContent = "LOADING DATA…";
     const [rawCsv, targetCsv] = await Promise.all([getCsv(SOURCE_CSV_URL,"RAW ASGARD"), getCsv(TARGET_CSV_URL,"TARGET ALL AGENT")]);
     if (!rawCsv.includes("Agent Name") || !rawCsv.includes("Amount")) throw new Error("CSV RAW terbuka, tetapi header Agent Name / Amount tidak ditemukan.");
     const targetRows = parseCsvObjects(targetCsv);
     const usableTargets = normalizeTargetRows(targetRows);
     if (!usableTargets.length) console.warn("TARGET ALL AGENT terbaca, tetapi belum ada baris target yang cocok. Periksa nama header/status agent.", Object.keys(targetRows[0] || {}));
-    status.textContent = `LAST UPDATE · data diterima, menghitung…`;
+    status.textContent = "UPDATING DASHBOARD…";
     loadCsv(rawCsv, targetRows);
   } catch (error) {
-    status.textContent = `LAST UPDATE · gagal (${error.name === "AbortError" ? "timeout" : "cek sumber data"})`;
+    status.textContent = `UPDATE FAILED · ${error.name === "AbortError" ? "TIMEOUT" : "CHECK DATA SOURCE"}`;
     showToast(error.name === "AbortError" ? "Google Sheets terlalu lama merespons. Periksa publikasi CSV." : error.message);
     console.error("Gagal memuat Google Sheets ASGARD:", error);
   } finally {

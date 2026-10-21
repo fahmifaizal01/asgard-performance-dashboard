@@ -5339,11 +5339,14 @@ function setAlbView(view) {
 }
 
 function renderAgentLeaderboard() {
+  const excludedLeaderboardAgents = new Set(["imam nugroho", "erna erviana purnamasari", "satyadi ambia"]);
+  const isExcludedLeaderboardAgent = name => excludedLeaderboardAgents.has(String(name || "").trim().toLowerCase());
   const ctx = modeContext("agentLeaderboardMonth", "agentLeaderboardMode", "agentLeaderboardWeek");
   const coachSet = getMultiSet("agentLeaderboardCoach");
   const agentSet = getMultiSet("agentLeaderboardAgent");
   const query = el("agentLeaderboardSearch").value.trim().toLowerCase();
   const rows = layerOneRows.filter(row =>
+    !isExcludedLeaderboardAgent(row.agent) &&
     matchMulti(ctx.monthSet, row.month) &&
     (ctx.mode === "monthly" || ctx.weekSetEff.has(row.week)) &&
     matchMulti(coachSet, row.leader || "-") &&
@@ -5371,6 +5374,7 @@ function renderAgentLeaderboard() {
   });
   const scopeSet = new Set(ctx.scopeWeeks);
   targetRows.forEach(row => {
+    if (isExcludedLeaderboardAgent(row.agent)) return;
     if (row.team !== "Layer 1" || !row.agent || !scopeSet.has(row.week)) return;
     if (!matchMulti(coachSet, row.leader || "-") || !matchMulti(agentSet, row.agent)) return;
     if (query && !`${row.agent} ${row.leader}`.toLowerCase().includes(query)) return;

@@ -125,7 +125,7 @@ footer{color:#667f9f;font-size:11px;line-height:1.7;padding:8px 0 0}
         <div class="subtitle">Executive Sales Intelligence · 2026</div>
       </div>
     </div>
-    <div class="pill">● LOCAL DATA · SECURE VIEW</div>
+    <div class="pill">● GOOGLE SHEETS · LIVE DATA</div>
   </div>
 </header>
 
@@ -133,16 +133,16 @@ footer{color:#667f9f;font-size:11px;line-height:1.7;padding:8px 0 0}
   <section class="section panel">
     <div class="upload-row">
       <div class="upload-info">
-        <div class="eyebrow">Data source</div>
-        <strong>Import performance RAW</strong>
-        <div class="muted">CSV diproses di browser ini. File tidak diunggah ke website.</div>
+        <div class="eyebrow">Live data source</div>
+        <strong>Google Sheets · ASGARD Performance RAW</strong>
+        <div class="muted">Data dimuat langsung dari Google Sheets. Dashboard mencoba memperbarui data otomatis setiap 5 menit.</div>
       </div>
       <div class="upload-actions">
-        <input id="file" type="file" accept=".csv,text/csv">
-        <button class="btn primary" id="export">Export data</button>
+        <button class="btn primary" id="refresh">↻ Refresh data</button>
+        <button class="btn" id="export">Export data</button>
       </div>
     </div>
-    <div id="status" class="status">Pilih file RAW untuk memulai dashboard.</div>
+    <div id="status" class="status">Menghubungkan ke Google Sheets...</div>
   </section>
 
   <section class="section">
@@ -260,7 +260,7 @@ footer{color:#667f9f;font-size:11px;line-height:1.7;padding:8px 0 0}
           </tr>
         </thead>
         <tbody id="leaderboard">
-          <tr><td colspan="6" class="empty">Upload CSV untuk menampilkan leaderboard.</td></tr>
+          <tr><td colspan="6" class="empty">Menunggu data Google Sheets.</td></tr>
         </tbody>
       </table>
     </div>
@@ -275,7 +275,7 @@ footer{color:#667f9f;font-size:11px;line-height:1.7;padding:8px 0 0}
         </div>
       </div>
       <div id="mapping" class="mapping">
-        <div class="empty">Belum ada data yang dimuat.</div>
+        <div class="empty">Menunggu data Google Sheets.</div>
       </div>
       <p class="muted">Periksa pemetaan ini untuk memastikan tanggal, amount, transaksi, dan status mengacu pada kolom yang benar di file RAW.</p>
     </div>
@@ -287,15 +287,15 @@ footer{color:#667f9f;font-size:11px;line-height:1.7;padding:8px 0 0}
         </div>
       </div>
       <div id="statusList" class="status-list">
-        <div class="empty">Upload CSV untuk melihat status.</div>
+        <div class="empty">Menunggu data Google Sheets.</div>
       </div>
       <p class="muted" id="statusExplanation">Status akan ditampilkan setelah file dimuat.</p>
     </div>
   </section>
 
   <footer>
-    Dashboard memproses data di browser. Amount adalah penjumlahan kolom Amount dan tidak otomatis berarti omzet yang sudah dibayar.
-    Validasi definisi bisnis dan status transaksi sebelum memakai angka untuk laporan resmi.
+    Sumber data: Google Sheets yang dipublikasikan ke web. Amount adalah penjumlahan kolom Amount dan tidak otomatis berarti omzet yang sudah dibayar.
+    Data yang dipublikasikan dapat diakses publik. Validasi definisi bisnis dan status transaksi sebelum memakai angka untuk laporan resmi.
   </footer>
 </main>
 
@@ -650,62 +650,62 @@ function render() {
   $('status').textContent = `Data terbaca: ${formatNumber(rawRows.length)} baris · Hasil filter: ${formatNumber(rows.length)} baris.`;
 }
 
-function loadCsv(file) {
-  if (!file) return;
-  $('status').textContent = 'Membaca dan memvalidasi file CSV...';
+const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQIb4FZu8rixfaSKBq__bM-mWuGHAbNns6xv21lDkwXCiXPaYYQfyErtmdlQ6K8FGSWOBS_d7etwK-R/pub?gid=1263546583&single=true&output=csv';
 
-  Papa.parse(file,{
-    header:true,
-    skipEmptyLines:'greedy',
-    dynamicTyping:false,
-    transformHeader:h=>String(h??'').replace(/^\uFEFF/,'').trim(),
-    complete:result=>{
-      allFields = (result.meta.fields || []).filter(Boolean);
-      rawRows = result.data.filter(row=>
-        Object.values(row).some(v=>String(v??'').trim()!=='')
-      );
-
-      if (!rawRows.length) {
-        $('status').textContent = 'File tidak berisi data yang bisa dibaca.';
-        return;
-      }
-
-      columnMap = {};
-      for (const key of Object.keys(ALIASES)) {
-        columnMap[key] = findColumn(allFields,ALIASES[key]);
-      }
-
-      if (!columnMap.date) {
-        $('status').textContent = 'Kolom tanggal tidak ditemukan. Kolom tersedia: '+allFields.join(', ');
-        return;
-      }
-
-      fillSelect('agent',rawRows.map(r=>text(getValue(r,columnMap.agent),'')),'Semua agent');
-      fillSelect('leader',rawRows.map(r=>text(getValue(r,columnMap.leader),'')),'Semua leader');
-      fillSelect('product',rawRows.map(r=>text(getValue(r,columnMap.product),'')),'Semua produk');
-
-      const dates = rawRows.map(r=>parseDate(getValue(r,columnMap.date))).filter(Boolean).sort();
-      if (dates.length) $('end').value = dates[dates.length-1];
-      $('start').value = '2026-06-29';
-
-      setMapping();
-      render();
-
-      const warnings = [];
-      if (!columnMap.amount) warnings.push('kolom Amount tidak ditemukan');
-      if (!columnMap.agent) warnings.push('kolom Agent tidak ditemukan');
-      if (!columnMap.txn) warnings.push('ID transaksi tidak ditemukan; jumlah transaksi dihitung dari baris');
-      if (!columnMap.paidStrict) warnings.push('kolom Paid status tidak ditemukan');
-      $('status').textContent = `Berhasil membaca ${formatNumber(rawRows.length)} baris. ` +
-        (warnings.length ? 'Perlu dicek: '+warnings.join('; ')+'.' : 'Pemetaan kolom utama ditemukan.');
-    },
-    error:error=>{
-      $('status').textContent = 'Gagal membaca CSV: '+error.message;
-    }
-  });
+function processParsedCsv(result) {
+  allFields = (result.meta.fields || []).filter(Boolean);
+  rawRows = result.data.filter(row => Object.values(row).some(v=>String(v??'').trim()!==''));
+  if (!rawRows.length) {
+    $('status').textContent = 'CSV berhasil diambil, tetapi tidak ada baris data yang terbaca. Periksa tab yang dipublikasikan.';
+    return;
+  }
+  columnMap = {};
+  for (const key of Object.keys(ALIASES)) columnMap[key] = findColumn(allFields,ALIASES[key]);
+  if (!columnMap.date) {
+    $('status').textContent = 'Kolom tanggal tidak ditemukan. Kolom tersedia: '+allFields.join(', ');
+    return;
+  }
+  fillSelect('agent',rawRows.map(r=>text(getValue(r,columnMap.agent),'')),'Semua agent');
+  fillSelect('leader',rawRows.map(r=>text(getValue(r,columnMap.leader),'')),'Semua leader');
+  fillSelect('product',rawRows.map(r=>text(getValue(r,columnMap.product),'')),'Semua produk');
+  const dates = rawRows.map(r=>parseDate(getValue(r,columnMap.date))).filter(Boolean).sort();
+  if (dates.length) $('end').value = dates[dates.length-1];
+  $('start').value = '2026-06-29';
+  setMapping();
+  render();
+  const warnings = [];
+  if (!columnMap.amount) warnings.push('kolom Amount tidak ditemukan');
+  if (!columnMap.agent) warnings.push('kolom Agent tidak ditemukan');
+  if (!columnMap.txn) warnings.push('ID transaksi tidak ditemukan; jumlah transaksi dihitung dari baris');
+  if (!columnMap.paidStrict) warnings.push('kolom Paid status tidak ditemukan');
+  const updatedAt = new Date().toLocaleString('id-ID');
+  $('status').textContent = `Berhasil memuat ${formatNumber(rawRows.length)} baris dari Google Sheets · Pembaruan terakhir: ${updatedAt}. ` +
+    (warnings.length ? 'Perlu dicek: '+warnings.join('; ')+'.' : 'Pemetaan kolom utama ditemukan.');
 }
 
-$('file').addEventListener('change',e=>loadCsv(e.target.files[0]));
+async function loadRemoteCsv() {
+  $('status').textContent = 'Mengambil data terbaru dari Google Sheets...';
+  $('refresh').disabled = true;
+  try {
+    const response = await fetch(DATA_URL + '&_=' + Date.now(), { cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const csvText = await response.text();
+    Papa.parse(csvText, {
+      header:true, skipEmptyLines:'greedy', dynamicTyping:false,
+      transformHeader:h=>String(h??'').replace(/^\uFEFF/,'').trim(),
+      complete:processParsedCsv,
+      error:error=>{ $('status').textContent = 'Gagal membaca CSV: ' + error.message; }
+    });
+  } catch (error) {
+    $('status').textContent = 'Gagal mengambil Google Sheets. Pastikan sheet sudah dipublikasikan sebagai CSV dan koneksi mengizinkan akses. Detail: ' + error.message;
+  } finally {
+    $('refresh').disabled = false;
+  }
+}
+
+$('refresh').addEventListener('click', loadRemoteCsv);
+loadRemoteCsv();
+setInterval(loadRemoteCsv, 5 * 60 * 1000);
 ['start','end','agent','leader','product','paidFilter'].forEach(id=>{
   $(id).addEventListener('change',render);
 });
@@ -719,7 +719,7 @@ $('reset').addEventListener('click',()=>{
 });
 $('export').addEventListener('click',()=>{
   if (!filteredRows.length) {
-    alert('Tidak ada data untuk diekspor. Pilih file CSV terlebih dahulu.');
+    alert('Tidak ada data untuk diekspor. Pastikan data Google Sheets sudah termuat.');
     return;
   }
   const fields = ['date','agent','leader','product','amount','txn','status'];

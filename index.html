@@ -2711,22 +2711,29 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
         <article class="kpi"><span>Total to target</span><strong id="leaderboardTotalToTargetKpi">0%</strong><small id="leaderboardTargetNote">Target bulan terpilih</small></article>
       </div>
 
-      <section class="table-panel leaderboard-panel" id="leaderboardCoachTablePanel">
-        <div class="panel-heading"><div><h2>Leaderboard Coach - Tabel Lengkap</h2><p>Ringkasan revenue, target, transaksi, dan agent per coach. Daftar ranking di bawah menampilkan progres dan persebaran produk.</p></div></div>
-        <div class="table-wrap"><table class="data-table" id="leaderboardCoachTable"><thead><tr><th>Rank</th><th>Coach / Leader</th><th>Kategori</th><th>Agent</th><th>Transaksi</th><th>Revenue</th><th>Target</th><th>% Target</th><th>Gap ke atas</th></tr></thead><tbody></tbody></table></div>
-      </section>
-      <div id="leaderboardPodium" class="inc-podium" hidden></div>
-
-      <section class="table-panel leaderboard-panel">
-        <div class="panel-heading">
-          <div>
-            <h2>Ranking Coach</h2>
-            <p>Klik nama coach untuk melihat persebaran produk</p>
+      <nav class="trend-subtabs" aria-label="Tampilan leaderboard coach">
+        <button type="button" class="active" data-coachview="table" onclick="setCoachLeaderboardView('table')">Tabel Lengkap</button>
+        <button type="button" data-coachview="cards" onclick="setCoachLeaderboardView('cards')">Kartu Ranking</button>
+      </nav>
+      <div id="coachLeaderboardViewTable">
+        <section class="table-panel leaderboard-panel" id="leaderboardCoachTablePanel">
+          <div class="panel-heading"><div><h2>Leaderboard Coach - Tabel Lengkap</h2><p>Revenue, target, transaksi, dan jumlah agent per coach. Klik judul kolom tidak mengubah sumber data.</p></div></div>
+          <div class="table-wrap"><table class="data-table" id="leaderboardCoachTable"><thead><tr><th>Rank</th><th>Coach / Leader</th><th>Kategori</th><th>Agent</th><th>Transaksi</th><th>Revenue</th><th>Target</th><th>% Target</th><th>Gap ke atas</th></tr></thead><tbody></tbody></table></div>
+        </section>
+      </div>
+      <div id="coachLeaderboardViewCards" hidden>
+        <div id="leaderboardPodium" class="inc-podium" hidden></div>
+        <section class="table-panel leaderboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Ranking Coach</h2>
+              <p>Klik nama coach untuk melihat persebaran produk</p>
+            </div>
+            <span id="leaderboardCount" class="count-chip">0 coach</span>
           </div>
-          <span id="leaderboardCount" class="count-chip">0 coach</span>
-        </div>
-        <div id="leaderboardList" class="leaderboard-list"></div>
-      </section>
+          <div id="leaderboardList" class="leaderboard-list"></div>
+        </section>
+      </div>
     </section>
 
     <section id="agentLeaderboardPanel" class="tab-panel">
@@ -4740,6 +4747,15 @@ function renderDodolan() {
   board.scrollTop = scrollTop;
 }
 
+function setCoachLeaderboardView(view) {
+  const showTable = view !== "cards";
+  const table = document.getElementById("coachLeaderboardViewTable");
+  const cards = document.getElementById("coachLeaderboardViewCards");
+  if (table) table.hidden = !showTable;
+  if (cards) cards.hidden = showTable;
+  document.querySelectorAll("[data-coachview]").forEach(button => button.classList.toggle("active", button.dataset.coachview === (showTable ? "table" : "cards")));
+}
+
 function renderLeaderboard() {
   const monthSet = getMultiSet("leaderboardMonthFilter");
   const weekSet = getMultiSet("leaderboardWeekFilter");
@@ -5348,7 +5364,10 @@ function setAlbView(view) {
 }
 
 const EXCLUDED_AGENT_NAMES = new Set(["imam nugroho", "erna erviana purnamasari", "satyadi ambia"]);
-function isExcludedAgentName(name) { return EXCLUDED_AGENT_NAMES.has(String(name || "").trim().toLowerCase()); }
+function isExcludedAgentName(name) {
+  const normalized = String(name || "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").trim().toLowerCase().replace(/\\s+/g, " ");
+  return [...EXCLUDED_AGENT_NAMES].some(excluded => normalized === excluded || normalized.startsWith(excluded + " ") || normalized.includes(" " + excluded + " "));
+}
 
 function renderAgentLeaderboard() {
   const ctx = modeContext("agentLeaderboardMonth", "agentLeaderboardMode", "agentLeaderboardWeek");

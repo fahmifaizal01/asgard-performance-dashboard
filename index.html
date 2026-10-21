@@ -6094,7 +6094,7 @@ async function loadFromGoogleSheet() {
     const csvText = await response.text();
     if (!csvText.trim() || /<html[\s>]/i.test(csvText.slice(0, 300))) throw new Error("Google Sheets tidak mengembalikan CSV. Periksa pengaturan publikasi sheet.");
     loadCsv(csvText);
-  } catch (error) { el("dataStatus").textContent = "Gagal memuat data"; showToast(error.message); console.error(error); }
+  } catch (error) { el("dataStatus").textContent = error.name === "AbortError" ? "Koneksi data timeout" : "Gagal memuat data"; showToast(error.message); console.error(error); }
 }
 
 function exportResults() {

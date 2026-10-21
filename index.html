@@ -1557,22 +1557,22 @@ th.tr-name { z-index: 4; background: #f8fafb; }
 .insight-card.green { border-color: #9be4cb; background: #f4fdf9; }
 .insight-card.gray { background: #f8fafb; }
 
-/* ================= THEME REFRESH ================= */
-:root { --line: #d3e0ee; --accent: #0ea5c6; --accent-dark: #0b6f96; --accent-2: #367ff0; --accent-soft: #e3f7ff; }
-#incentivePanel, .tab-button[data-tab="incentivePanel"] { --accent: #0ea5c6; --accent-dark: #0b6f96; --accent-2: #367ff0; --accent-soft: #e3f7ff; }
-#actionPanel, .tab-button[data-tab="actionPanel"] { --accent: #f97316; --accent-dark: #c2410c; --accent-2: #f59e0b; --accent-soft: #fff0e2; }
-#topCampaignPanel, .tab-button[data-tab="topCampaignPanel"] { --accent: #8b5cf6; --accent-dark: #6d28d9; --accent-2: #ec4899; --accent-soft: #f0eaff; }
-#dodolanPanel, .tab-button[data-tab="dodolanPanel"] { --accent: #ec4899; --accent-dark: #be185d; --accent-2: #f97316; --accent-soft: #ffe6f2; }
-#leaderboardPanel, .tab-button[data-tab="leaderboardPanel"] { --accent: #f59e0b; --accent-dark: #b45309; --accent-2: #ef4444; --accent-soft: #fff3d6; }
-#spvPanel, .tab-button[data-tab="spvPanel"] { --accent: #10b981; --accent-dark: #047857; --accent-2: #06b6d4; --accent-soft: #e1faf1; }
-#agentLeaderboardPanel, .tab-button[data-tab="agentLeaderboardPanel"] { --accent: #3b82f6; --accent-dark: #1d4ed8; --accent-2: #8b5cf6; --accent-soft: #e5eeff; }
-#compareTeamPanel, .tab-button[data-tab="compareTeamPanel"] { --accent: #6366f1; --accent-dark: #4338ca; --accent-2: #ec4899; --accent-soft: #ebecff; }
-#trendPanel, .tab-button[data-tab="trendPanel"] { --accent: #06b6d4; --accent-dark: #0e7490; --accent-2: #10b981; --accent-soft: #dff6fa; }
+/* ================= ASGARD BLUE THEME ================= */
+:root { --ink:#092b4c; --muted:#587b9d; --line:#c8dff2; --background:#edf7ff; --panel:#ffffff; --teal:#38bdf8; --teal-dark:#075985; --teal-soft:#e0f2fe; --blue:#2563eb; }
+#incentivePanel, .tab-button[data-tab="incentivePanel"] { --accent:#38bdf8; --accent-dark:#075985; --accent-2:#2563eb; --accent-soft:#e0f2fe; }
+#actionPanel, .tab-button[data-tab="actionPanel"] { --accent:#38bdf8; --accent-dark:#075985; --accent-2:#2563eb; --accent-soft:#e0f2fe; }
+#topCampaignPanel, .tab-button[data-tab="topCampaignPanel"] { --accent:#0ea5e9; --accent-dark:#075985; --accent-2:#2563eb; --accent-soft:#e0f2fe; }
+#dodolanPanel, .tab-button[data-tab="dodolanPanel"] { --accent:#60a5fa; --accent-dark:#1d4ed8; --accent-2:#0284c7; --accent-soft:#dbeafe; }
+#leaderboardPanel, .tab-button[data-tab="leaderboardPanel"] { --accent:#2563eb; --accent-dark:#1e40af; --accent-2:#38bdf8; --accent-soft:#dbeafe; }
+#spvPanel, .tab-button[data-tab="spvPanel"] { --accent:#0284c7; --accent-dark:#075985; --accent-2:#60a5fa; --accent-soft:#e0f2fe; }
+#agentLeaderboardPanel, .tab-button[data-tab="agentLeaderboardPanel"] { --accent:#3b82f6; --accent-dark:#1d4ed8; --accent-2:#0ea5e9; --accent-soft:#dbeafe; }
+#compareTeamPanel, .tab-button[data-tab="compareTeamPanel"] { --accent:#0f6cbd; --accent-dark:#0c4a6e; --accent-2:#7dd3fc; --accent-soft:#e0f2fe; }
+#trendPanel, .tab-button[data-tab="trendPanel"] { --accent:#06b6d4; --accent-dark:#0e7490; --accent-2:#3b82f6; --accent-soft:#dff6fa; }
 
 body {
   background:
     radial-gradient(900px 380px at 0% -8%, #cfeeff 0%, transparent 62%),
-    radial-gradient(800px 380px at 100% 0%, #ffd9ee 0%, transparent 58%),
+    radial-gradient(800px 380px at 100% 0%, #bfdbfe 0%, transparent 58%),
     radial-gradient(700px 500px at 50% 110%, #e5defa 0%, transparent 60%),
     #f1f6fb;
   background-attachment: fixed;
@@ -1594,7 +1594,7 @@ body {
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 42, 161, .5), transparent 68%);
+  background: radial-gradient(circle, rgba(56, 189, 248, .5), transparent 68%);
 }
 .topbar::after {
   content: "";
@@ -1604,7 +1604,7 @@ body {
   width: 300px;
   height: 260px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(24, 191, 232, .45), transparent 68%);
+  background: radial-gradient(circle, rgba(37, 99, 235, .45), transparent 68%);
 }
 .topbar > * { position: relative; z-index: 1; }
 .topbar h1 { color: #fff; letter-spacing: .01em; }
@@ -1616,12 +1616,12 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #ff2aa1, #ff9f2f);
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
   color: #fff;
   font-size: 18px;
   font-weight: 800;
   letter-spacing: .02em;
-  box-shadow: 0 10px 22px -8px rgba(255, 42, 161, .8);
+  box-shadow: 0 10px 22px -8px rgba(37, 99, 235, .35);
 }
 .topbar .status-dot { color: #cfe3f7; }
 .topbar .icon-button { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .28); color: #fff; }
@@ -1855,7 +1855,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
   font-weight: 800;
   box-shadow: 0 6px 12px -6px rgba(6, 34, 58, .6);
 }
-.avatar.av-1 { background: linear-gradient(135deg, #ff2aa1, #ff9f2f); }
+.avatar.av-1 { background: linear-gradient(135deg, #38bdf8, #2563eb); }
 .avatar.av-2 { background: linear-gradient(135deg, #9650dc, #367ff0); }
 .avatar.av-3 { background: linear-gradient(135deg, #16c995, #18bfe8); }
 .avatar.av-4 { background: linear-gradient(135deg, #ff9f2f, #f43f5e); }
@@ -2288,18 +2288,18 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
 
   <main>
     <nav class="tabs" aria-label="Dashboard sections">
-      <button class="tab-button active" type="button" data-tab="incentivePanel">DS INCENTIVE ALL</button>
-      <button class="tab-button" type="button" data-tab="actionPanel">ACTION CENTER</button>
-      <button class="tab-button" type="button" data-tab="topCampaignPanel">TOP CAMPAIGN</button>
-      <button class="tab-button" type="button" data-tab="dodolanPanel">DODOLAN</button>
-      <button class="tab-button" type="button" data-tab="leaderboardPanel">LEADERBOARD COACH</button>
+      <button class="tab-button" type="button" data-tab="incentivePanel" style="display:none">DS INCENTIVE ALL</button>
+      <button class="tab-button" type="button" data-tab="actionPanel" style="display:none">ACTION CENTER</button>
       <button class="tab-button" type="button" data-tab="spvPanel">SPV PRODUCT</button>
+      <button class="tab-button active" type="button" data-tab="leaderboardPanel">LEADERBOARD COACH</button>
       <button class="tab-button" type="button" data-tab="agentLeaderboardPanel">LEADERBOARD AGENT</button>
       <button class="tab-button" type="button" data-tab="compareTeamPanel">COMPARE TEAM</button>
-      <button class="tab-button" type="button" data-tab="trendPanel">TREND AGENT</button>
+      <button class="tab-button" type="button" data-tab="topCampaignPanel">TOP CAMPAIGN</button>
+      <button class="tab-button" type="button" data-tab="dodolanPanel">DODOLAN</button>
+      <button class="tab-button" type="button" data-tab="trendPanel" style="display:none">TREND AGENT</button>
     </nav>
 
-    <section id="incentivePanel" class="tab-panel active">
+    <section id="incentivePanel" class="tab-panel" style="display:none">
       <div class="asgard-incentive-placeholder"><p class="eyebrow">INCENTIVE TRACKER</p><h2>Data incentive belum tersedia</h2><p style="color:var(--muted);max-width:620px;margin:10px auto 0;line-height:1.7;">Bagian DS INCENTIVE ALL dikosongkan sementara. Tab ini bisa diaktifkan setelah data dan ketentuan perhitungan incentive ASGARD tersedia.</p></div>
     <div class="leaderboard-hero">
       <div>
@@ -2418,7 +2418,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
     </section>
     </section>
 
-    <section id="actionPanel" class="tab-panel">
+    <section id="actionPanel" class="tab-panel" style="display:none">
       <div class="leaderboard-hero action-hero">
         <div>
           <p class="eyebrow">DAILY OPERATING VIEW</p>
@@ -2672,7 +2672,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
       </section>
     </section>
 
-    <section id="leaderboardPanel" class="tab-panel">
+    <section id="leaderboardPanel" class="tab-panel active">
       <div class="leaderboard-hero">
         <div>
           <p class="eyebrow">MONTHLY RACE</p>
@@ -2924,7 +2924,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
       </section>
     </section>
 
-    <section id="trendPanel" class="tab-panel">
+    <section id="trendPanel" class="tab-panel" style="display:none">
       <div class="leaderboard-hero agent-hero">
         <div>
           <p class="eyebrow">WEEKLY TREND</p>
@@ -3116,6 +3116,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
 const WEEKLY_TARGET = 23400000;
 const WEEKLY_TARGET_BY_SCHEME = { W1: 23400000, W2: 23400000, W4: 18200000, AUG1: 23400000, AUG3: 10400000, SEP: 9000000, SEP3: 9000000, SEP4: 9000000, OCT1: 8800000 };
 const SOURCE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIb4FZu8rixfaSKBq__bM-mWuGHAbNns6xv21lDkwXCiXPaYYQfyErtmdlQ6K8FGSWOBS_d7etwK-R/pub?gid=1263546583&single=true&output=csv";
+const TARGET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIb4FZu8rixfaSKBq__bM-mWuGHAbNns6xv21lDkwXCiXPaYYQfyErtmdlQ6K8FGSWOBS_d7etwK-R/pub?gid=965637076&single=true&output=csv";
 const SOURCE_TAB_NAME = "RAW_COMBINED";
 const SOURCE_GID = "0";
 const JULY_WEEK_COUNT = 5;
@@ -3585,28 +3586,39 @@ function totalLeaderboardTarget(team, activeWeeks) {
 }
 
 function normalizeTargetRows(rows) {
+  if (!rows || !rows.length) return [];
   const keys = {};
-  Object.keys(rows[0] || {}).forEach(key => { keys[key.trim().toLowerCase()] = key; });
-  const read = (row, name) => row[keys[name.toLowerCase()]];
+  Object.keys(rows[0] || {}).forEach(key => { keys[String(key).trim().toLowerCase().replace(/[_-]+/g," ")] = key; });
+  const read = (row, ...names) => {
+    for (const name of names) {
+      const key = keys[String(name).trim().toLowerCase().replace(/[_-]+/g," ")];
+      if (key !== undefined && row[key] !== undefined && String(row[key]).trim() !== "") return row[key];
+    }
+    return "";
+  };
+  const monthKey = value => String(value || "").trim().toUpperCase().replace(/\./g,"").slice(0,3);
   return rows.map(row => {
-    const weekNum = Number(read(row, "WEEK"));
-    const week = weekFor("", weekNum);
-    return {
-      agent: String(read(row, "Agent") || "").trim(),
-      leader: String(read(row, "Coach") || "").trim(),
-      spv: String(read(row, "SPV") || "").trim(),
-      team: normalizeTeam(read(row, "KATEGORI")),
-      week: week?.name || "",
-      weekNum,
-      target: parseAmount(read(row, "Target")),
-    };
-  }).filter(row => row.agent && row.week && row.target >= 0);
+    const agent = String(read(row,"Agent Name","Agent","Nama Agent","Nama Agen") || "").trim();
+    const leader = String(read(row,"Coach","Leader Name","Leader","Nama Coach") || "").trim();
+    const spv = String(read(row,"SPV","Supervisor") || "").trim();
+    const teamRaw = read(row,"Status Agent","Status","Layer","Kategori","Team","Kategori Team");
+    const team = normalizeTeam(teamRaw);
+    const weekRaw = read(row,"Week","WeekNum","Week Number","Minggu");
+    const monthRaw = read(row,"Month","Bulan","Month Name");
+    const weekNum = Number(String(weekRaw).match(/\d+/)?.[0] || 0);
+    const month = String(monthRaw || "").trim();
+    let week = "";
+    if (month && weekNum) week = `RAW-${monthKey(month)}-W${weekNum}`;
+    else if (weekNum) week = weekFor("", weekNum)?.name || "";
+    const target = parseAmount(read(row,"Target","Target Revenue","Target Amount","Target Mingguan","Target Bulanan"));
+    return { agent, leader, spv, team, week, weekNum, month, target };
+  }).filter(row => row.agent && row.week && row.target >= 0 && ["Layer 1","Layer 2","S2S"].includes(row.team));
 }
 
 function targetForAgentWeek(agent, week) {
   const key = String(agent || "").trim().toLowerCase();
   const found = targetRows.find(row => row.agent.toLowerCase() === key && row.week === week?.name);
-  if (!found) return weeklyTargetForWeek(week);
+  if (!found) return targetRows.length ? 0 : weeklyTargetForWeek(week);
   return week?.scheme === "AUG3" && found.team === "Layer 1" ? weeklyTargetForWeek(week) : found.target;
 }
 
@@ -3723,7 +3735,7 @@ async function loadWorkbook(buffer) {
   loadRows(rows, sheetName, targetSheetRows);
 }
 
-function loadCsv(text) {
+function loadCsv(text, targetSheetRows = []) {
   const [rawHeaders, ...lines] = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim() !== "").map(parseCsvLine);
   const seen = new Map();
   const headers = rawHeaders.map((header, index) => {
@@ -3734,7 +3746,7 @@ function loadCsv(text) {
   });
   const rows = lines.map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
   if (!rows.length) throw new Error("Sheet RAW tidak memiliki data.");
-  loadRows(rows, SOURCE_TAB_NAME, []);
+  loadRows(rows, SOURCE_TAB_NAME, targetSheetRows);
 }
 
 function parseCsvLine(line) {
@@ -6092,24 +6104,42 @@ async function loadFromGoogleSheet() {
   status.classList.remove("ready");
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
-  try {
-    const url = `${SOURCE_CSV_URL}${SOURCE_CSV_URL.includes("?") ? "&" : "?"}_=${Date.now()}`;
+  const getCsv = async (baseUrl, label) => {
+    const url = `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}_=${Date.now()}`;
     const response = await fetch(url, { cache: "no-store", signal: controller.signal });
-    if (!response.ok) throw new Error(`Google Sheets merespons HTTP ${response.status}. Pastikan tab RAW dipublikasikan sebagai CSV dan aksesnya tersedia untuk siapa saja.`);
-    status.textContent = "Data diterima, sedang memproses baris transaksi…";
-    const csvText = await response.text();
-    if (!csvText.trim()) throw new Error("CSV Google Sheets kosong. Periksa tab dan pengaturan publikasi.");
-    if (/^\s*<!doctype html|^\s*<html[\s>]/i.test(csvText.slice(0, 500))) throw new Error("Google Sheets mengirim halaman HTML, bukan CSV. Pastikan URL publikasi CSV benar.");
-    if (!csvText.includes("Agent Name") || !csvText.includes("Amount")) throw new Error("CSV terbuka, tetapi header Agent Name / Amount tidak ditemukan. Periksa tab RAW yang dipublikasikan.");
-    status.textContent = "CSV diterima, menghitung performa…";
-    loadCsv(csvText);
+    if (!response.ok) throw new Error(`${label}: HTTP ${response.status}. Pastikan tab dipublikasikan sebagai CSV.`);
+    const csv = await response.text();
+    if (!csv.trim() || /^\s*<!doctype html|^\s*<html[\s>]/i.test(csv.slice(0,500))) throw new Error(`${label}: tidak mengembalikan CSV. Periksa publikasi tab.`);
+    return csv;
+  };
+  try {
+    status.textContent = "Mengambil data RAW dan TARGET ALL AGENT…";
+    const [rawCsv, targetCsv] = await Promise.all([getCsv(SOURCE_CSV_URL,"RAW ASGARD"), getCsv(TARGET_CSV_URL,"TARGET ALL AGENT")]);
+    if (!rawCsv.includes("Agent Name") || !rawCsv.includes("Amount")) throw new Error("CSV RAW terbuka, tetapi header Agent Name / Amount tidak ditemukan.");
+    const targetRows = parseCsvObjects(targetCsv);
+    const usableTargets = normalizeTargetRows(targetRows);
+    if (!usableTargets.length) console.warn("TARGET ALL AGENT terbaca, tetapi belum ada baris target yang cocok. Periksa nama header/status agent.", Object.keys(targetRows[0] || {}));
+    status.textContent = `Data diterima · ${usableTargets.length.toLocaleString("id-ID")} target agent · menghitung…`;
+    loadCsv(rawCsv, targetRows);
   } catch (error) {
     status.textContent = error.name === "AbortError" ? "Koneksi timeout (90 detik)" : "Gagal memuat data";
-    showToast(error.name === "AbortError" ? "Google Sheets terlalu lama merespons. Coba refresh atau periksa publikasi CSV." : error.message);
+    showToast(error.name === "AbortError" ? "Google Sheets terlalu lama merespons. Periksa publikasi CSV." : error.message);
     console.error("Gagal memuat Google Sheets ASGARD:", error);
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+function parseCsvObjects(text) {
+  const [rawHeaders, ...lines] = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim() !== "").map(parseCsvLine);
+  const seen = new Map();
+  const headers = rawHeaders.map((header,index) => {
+    const base = String(header || `Kolom ${index+1}`).trim();
+    const count = (seen.get(base.toLowerCase()) || 0)+1;
+    seen.set(base.toLowerCase(),count);
+    return count === 1 ? base : `${base}__${count}`;
+  });
+  return lines.map(values => Object.fromEntries(headers.map((header,index) => [header, values[index] ?? ""])));
 }
 
 function exportResults() {

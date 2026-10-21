@@ -6087,14 +6087,29 @@ function showToast(message) {
 }
 
 async function loadFromGoogleSheet() {
-  el("dataStatus").textContent = "Memuat data Google Sheets ASGARD...";
+  const status = el("dataStatus");
+  status.textContent = "Menghubungkan ke Google Sheets ASGARD…";
+  status.classList.remove("ready");
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
   try {
-    const response = await fetch(`${SOURCE_CSV_URL}${SOURCE_CSV_URL.includes("?") ? "&" : "?"}_=${Date.now()}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Google Sheets tidak dapat diakses (HTTP ${response.status}). Pastikan tab RAW dipublikasikan sebagai CSV.`);
+    const url = `${SOURCE_CSV_URL}${SOURCE_CSV_URL.includes("?") ? "&" : "?"}_=${Date.now()}`;
+    const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+    if (!response.ok) throw new Error(`Google Sheets merespons HTTP ${response.status}. Pastikan tab RAW dipublikasikan sebagai CSV dan aksesnya tersedia untuk siapa saja.`);
+    status.textContent = "Data diterima, sedang memproses baris transaksi…";
     const csvText = await response.text();
-    if (!csvText.trim() || /<html[\s>]/i.test(csvText.slice(0, 300))) throw new Error("Google Sheets tidak mengembalikan CSV. Periksa pengaturan publikasi sheet.");
+    if (!csvText.trim()) throw new Error("CSV Google Sheets kosong. Periksa tab dan pengaturan publikasi.");
+    if (/^\s*<!doctype html|^\s*<html[\s>]/i.test(csvText.slice(0, 500))) throw new Error("Google Sheets mengirim halaman HTML, bukan CSV. Pastikan URL publikasi CSV benar.");
+    if (!csvText.includes("Agent Name") || !csvText.includes("Amount")) throw new Error("CSV terbuka, tetapi header Agent Name / Amount tidak ditemukan. Periksa tab RAW yang dipublikasikan.");
+    status.textContent = "CSV diterima, menghitung performa…";
     loadCsv(csvText);
-  } catch (error) { el("dataStatus").textContent = error.name === "AbortError" ? "Koneksi data timeout" : "Gagal memuat data"; showToast(error.message); console.error(error); }
+  } catch (error) {
+    status.textContent = error.name === "AbortError" ? "Koneksi timeout (90 detik)" : "Gagal memuat data";
+    showToast(error.name === "AbortError" ? "Google Sheets terlalu lama merespons. Coba refresh atau periksa publikasi CSV." : error.message);
+    console.error("Gagal memuat Google Sheets ASGARD:", error);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function exportResults() {

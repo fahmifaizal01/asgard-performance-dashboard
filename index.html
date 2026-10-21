@@ -4,206 +4,735 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ASGARD Performance Dashboard</title>
+<title>ASGARD | Executive Performance</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-:root{--bg:#081426;--panel:#12243d;--blue:#2563eb;--cyan:#38bdf8;--text:#edf5ff;--muted:#9db0ca}
+:root{
+  --bg:#081426;--surface:#101f35;--surface2:#152944;
+  --line:#263b58;--blue:#397bff;--cyan:#48c7ff;
+  --text:#edf4ff;--muted:#91a6c4;--green:#4cdbad;
+  --radius:16px;
+}
 *{box-sizing:border-box}
-body{margin:0;background:linear-gradient(135deg,#071426,#102c50);color:var(--text);font:14px Arial,sans-serif;min-height:100vh}
-header{padding:26px 5%;border-bottom:1px solid #29415e}
-h1{margin:0;font-size:27px}header p{color:var(--muted);margin:9px 0 0}
-main{max-width:1400px;margin:auto;padding:24px 5%}
-.panel,.kpi{background:rgba(18,36,61,.94);border:1px solid #29415e;border-radius:15px;padding:18px}
-.upload{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:20px}
-input,button{background:#0a1930;color:var(--text);border:1px solid #36516f;border-radius:8px;padding:11px}
-button{background:var(--blue);border:0;cursor:pointer;font-weight:bold}
-button:hover{opacity:.85}
-.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
-.filters label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:12px}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
-.kpi small{color:var(--muted)}.kpi strong{display:block;font-size:25px;margin-top:12px;overflow-wrap:anywhere}
-.content{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:20px}
-h2{font-size:17px;margin:0 0 16px}
-.table-wrap{overflow:auto;max-height:480px}
-table{border-collapse:collapse;width:100%;white-space:nowrap}
-th,td{padding:11px;text-align:left;border-bottom:1px solid #29415e}
-th{color:#9edcff;background:#142945;position:sticky;top:0}
-.note{color:var(--muted);font-size:12px;line-height:1.6}
-.status{color:#9edcff;margin:10px 0}
-canvas{max-height:320px}
-@media(max-width:800px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.content{grid-template-columns:1fr}h1{font-size:22px}}
-@media(max-width:420px){.kpis{grid-template-columns:1fr 1fr}.kpi strong{font-size:19px}main{padding:18px 4%}}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+header{background:linear-gradient(115deg,#0c1c33,#102c50);
+  border-bottom:1px solid var(--line);padding:28px 5%}
+.header-inner,main{max-width:1450px;margin:auto}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:45px;height:45px;border-radius:13px;background:var(--blue);
+  display:grid;place-items:center;font-size:20px;font-weight:800}
+h1{font-size:25px;letter-spacing:-.5px;margin:0}
+.subtitle{color:var(--muted);font-size:13px;margin-top:5px}
+.header-row{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.pill{border:1px solid #315078;border-radius:30px;padding:8px 12px;
+  color:#a9d9ff;font-size:12px;white-space:nowrap}
+main{padding:26px 5% 48px}
+.section{margin-bottom:22px}
+.section-heading{display:flex;align-items:center;justify-content:space-between;
+  gap:12px;margin-bottom:13px}
+.section-heading h2{font-size:15px;margin:0;font-weight:700}
+.eyebrow{color:var(--muted);font-size:11px;text-transform:uppercase;
+  letter-spacing:1.2px;margin-bottom:7px}
+.panel,.kpi{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius)}
+.panel{padding:20px}
+.upload-row{display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:18px}
+.upload-info strong{font-size:14px}
+.muted{font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px}
+.upload-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input[type=file]{max-width:100%;font-size:12px;color:var(--muted)}
+input[type=file]::file-selector-button{background:#1c3454;color:var(--text);
+  border:1px solid #355172;border-radius:8px;padding:10px;margin-right:9px;cursor:pointer}
+.btn{border:1px solid #355172;background:#172c48;color:var(--text);
+  padding:10px 14px;border-radius:9px;font-weight:600;font-size:12px}
+.btn.primary{background:var(--blue);border-color:var(--blue)}
+.btn:hover{filter:brightness(1.12)}
+.status{font-size:12px;color:var(--cyan);margin-top:13px;overflow-wrap:anywhere}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.field label{font-size:11px;color:var(--muted)}
+.field input,.field select{width:100%;min-width:0;background:#0a192d;color:var(--text);
+  border:1px solid #2a4261;border-radius:9px;padding:11px 10px;outline:none}
+.field input:focus,.field select:focus{border-color:var(--cyan)}
+.filter-actions{display:flex;align-items:end}
+.filter-actions button{width:100%;min-height:39px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kpi{padding:19px;position:relative;overflow:hidden}
+.kpi:before{content:"";position:absolute;top:0;left:0;width:3px;height:100%;background:var(--blue)}
+.kpi-label{font-size:12px;color:var(--muted)}
+.kpi-value{font-size:clamp(19px,2vw,28px);font-weight:750;
+  letter-spacing:-.7px;margin:13px 0 8px;overflow-wrap:anywhere}
+.kpi-foot{font-size:11px;color:var(--muted)}
+.kpi:nth-child(4):before{background:var(--green)}
+.charts{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.chart-box{height:300px;position:relative}
+.chart-note{font-size:11px;color:var(--muted);margin-top:8px}
+.table-wrap{width:100%;overflow:auto;max-height:530px}
+table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}
+th{position:sticky;top:0;background:#172b46;color:#a8c4e8;text-align:left;
+  font-weight:600;z-index:1}
+th,td{padding:13px 14px;border-bottom:1px solid #243750}
+tbody tr:hover{background:#152944}
+td.money{text-align:right;font-variant-numeric:tabular-nums}
+.rank{color:#a9d9ff;font-weight:750}
+.agent-name{font-weight:650}
+.empty{text-align:center;color:var(--muted);padding:30px}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.status-list{display:flex;flex-wrap:wrap;gap:8px}
+.status-chip{background:#192e49;border:1px solid #304967;border-radius:9px;
+  padding:9px 11px;font-size:11px;color:#c4d6ed}
+.status-chip b{color:white;margin-left:5px}
+.mapping{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.map-item{background:#0c1a2e;border:1px solid #263b58;padding:10px;border-radius:9px}
+.map-item span{display:block;font-size:10px;color:var(--muted);margin-bottom:5px}
+.map-item strong{font-size:12px;overflow-wrap:anywhere}
+footer{color:#667f9f;font-size:11px;line-height:1.7;padding:8px 0 0}
+@media(max-width:1050px){
+ .filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .charts{grid-template-columns:1fr}
+ .chart-box{height:280px}
+}
+@media(max-width:650px){
+ header{padding:22px 5%}
+ main{padding:18px 4% 32px}
+ h1{font-size:20px}
+ .header-row{align-items:flex-start}
+ .pill{display:none}
+ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .kpi{padding:14px}
+ .kpi-value{font-size:19px}
+ .filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .bottom-grid{grid-template-columns:1fr}
+ .panel{padding:15px}
+ .upload-actions{width:100%}
+ input[type=file]{width:100%}
+ .mapping{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>ASGARD Performance</h1>
-  <p>Sales Performance Dashboard · 2026</p>
+  <div class="header-inner header-row">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>ASGARD Performance</h1>
+        <div class="subtitle">Executive Sales Intelligence · 2026</div>
+      </div>
+    </div>
+    <div class="pill">● LOCAL DATA · SECURE VIEW</div>
+  </div>
 </header>
+
 <main>
-  <section class="panel upload">
-    <div>
-      <strong>Upload data RAW (.csv)</strong>
-      <div class="note">File dibaca di browser kamu, tidak diunggah ke website.</div>
+  <section class="section panel">
+    <div class="upload-row">
+      <div class="upload-info">
+        <div class="eyebrow">Data source</div>
+        <strong>Import performance RAW</strong>
+        <div class="muted">CSV diproses di browser ini. File tidak diunggah ke website.</div>
+      </div>
+      <div class="upload-actions">
+        <input id="file" type="file" accept=".csv,text/csv">
+        <button class="btn primary" id="export">Export data</button>
+      </div>
     </div>
-    <input id="file" type="file" accept=".csv">
-    <button id="export">Export hasil CSV</button>
-  </section>
-  <div id="status" class="status">Pilih file [CENTER] ASGARD Performance 2026 - RAW.csv untuk memulai.</div>
-
-  <section class="filters">
-    <label>Tanggal mulai<input id="start" type="date" value="2026-06-29"></label>
-    <label>Tanggal akhir<input id="end" type="date"></label>
-    <label>Agent<input id="agent" list="agents" placeholder="Semua agent"></label>
-    <datalist id="agents"></datalist>
-    <label>Leader<input id="leader" list="leaders" placeholder="Semua leader"></label>
-    <datalist id="leaders"></datalist>
-    <label>Product Type<input id="product" list="products" placeholder="Semua produk"></label>
-    <datalist id="products"></datalist>
-    <button id="reset">Reset filter</button>
+    <div id="status" class="status">Pilih file RAW untuk memulai dashboard.</div>
   </section>
 
-  <section class="kpis">
-    <div class="kpi"><small>Total Amount</small><strong id="amount">Rp0</strong></div>
-    <div class="kpi"><small>Total Transaksi / Baris</small><strong id="txns">0</strong></div>
-    <div class="kpi"><small>Agent Aktif</small><strong id="agentsCount">0</strong></div>
-    <div class="kpi"><small>Transaksi Paid</small><strong id="paid">0</strong></div>
-  </section>
-
-  <section class="content">
-    <div class="panel">
-      <h2>Tren Amount Harian</h2>
-      <canvas id="trend"></canvas>
+  <section class="section">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Control center</div>
+        <h2>Filter performa</h2>
+      </div>
+      <button class="btn" id="reset">Reset filter</button>
     </div>
     <div class="panel">
-      <h2>Top 10 Agent berdasarkan Amount</h2>
-      <canvas id="topChart"></canvas>
+      <div class="filters">
+        <div class="field">
+          <label for="start">Tanggal mulai</label>
+          <input id="start" type="date" value="2026-06-29">
+        </div>
+        <div class="field">
+          <label for="end">Tanggal akhir</label>
+          <input id="end" type="date">
+        </div>
+        <div class="field">
+          <label for="agent">Agent</label>
+          <select id="agent"><option value="">Semua agent</option></select>
+        </div>
+        <div class="field">
+          <label for="leader">Leader</label>
+          <select id="leader"><option value="">Semua leader</option></select>
+        </div>
+        <div class="field">
+          <label for="product">Product type</label>
+          <select id="product"><option value="">Semua produk</option></select>
+        </div>
+        <div class="field">
+          <label for="paidFilter">Status pembayaran</label>
+          <select id="paidFilter">
+            <option value="">Semua status</option>
+            <option value="paid">Paid</option>
+            <option value="unpaid">Belum paid</option>
+            <option value="unknown">Status tidak diketahui</option>
+          </select>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="panel" style="margin-bottom:20px">
-    <h2>Leaderboard Agent</h2>
+  <section class="section">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Performance snapshot</div>
+        <h2>Ringkasan pencapaian</h2>
+      </div>
+      <div class="muted" id="periodLabel">29 Jun 2026 – data terakhir</div>
+    </div>
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-label">Total Amount</div>
+        <div class="kpi-value" id="amount">Rp0</div>
+        <div class="kpi-foot">Jumlah kolom Amount</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Total Transaksi</div>
+        <div class="kpi-value" id="txns">0</div>
+        <div class="kpi-foot" id="txnFoot">Menunggu data</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Agent Aktif</div>
+        <div class="kpi-value" id="agentCount">0</div>
+        <div class="kpi-foot">Agent dengan data pada filter</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Transaksi Paid</div>
+        <div class="kpi-value" id="paidCount">0</div>
+        <div class="kpi-foot" id="paidFoot">Menunggu data</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section charts">
+    <div class="panel">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Daily trend</div>
+          <h2>Tren amount harian</h2>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="trend"></canvas></div>
+      <div class="chart-note">Jumlah Amount per tanggal berdasarkan filter aktif.</div>
+    </div>
+    <div class="panel">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Team ranking</div>
+          <h2>Top 10 agent</h2>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="topChart"></canvas></div>
+      <div class="chart-note">Peringkat berdasarkan total Amount, bukan jumlah transaksi.</div>
+    </div>
+  </section>
+
+  <section class="section panel">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Sales leaderboard</div>
+        <h2>Ranking performa agent</h2>
+      </div>
+      <div class="muted" id="boardCount">0 agent</div>
+    </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Rank</th><th>Agent</th><th>Leader</th><th>Transaksi</th><th>Total Amount</th></tr></thead>
-        <tbody id="leaderboard"><tr><td colspan="5">Upload file CSV untuk melihat data.</td></tr></tbody>
+        <thead>
+          <tr>
+            <th>Rank</th><th>Agent</th><th>Leader</th>
+            <th>Jumlah transaksi</th><th>Total amount</th><th>Paid</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard">
+          <tr><td colspan="6" class="empty">Upload CSV untuk menampilkan leaderboard.</td></tr>
+        </tbody>
       </table>
     </div>
   </section>
-  <p class="note">Catatan: KPI Amount menjumlahkan kolom Amount yang dapat dibaca sebagai angka. Pastikan definisi transaksi dan status Paid sesuai kebutuhan laporan. Data yang tampil mengikuti filter tanggal, agent, leader, dan product.</p>
+
+  <section class="section bottom-grid">
+    <div class="panel">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Data quality</div>
+          <h2>Validasi pemetaan kolom</h2>
+        </div>
+      </div>
+      <div id="mapping" class="mapping">
+        <div class="empty">Belum ada data yang dimuat.</div>
+      </div>
+      <p class="muted">Periksa pemetaan ini untuk memastikan tanggal, amount, transaksi, dan status mengacu pada kolom yang benar di file RAW.</p>
+    </div>
+    <div class="panel">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Payment audit</div>
+          <h2>Distribusi status pembayaran</h2>
+        </div>
+      </div>
+      <div id="statusList" class="status-list">
+        <div class="empty">Upload CSV untuk melihat status.</div>
+      </div>
+      <p class="muted" id="statusExplanation">Status akan ditampilkan setelah file dimuat.</p>
+    </div>
+  </section>
+
+  <footer>
+    Dashboard memproses data di browser. Amount adalah penjumlahan kolom Amount dan tidak otomatis berarti omzet yang sudah dibayar.
+    Validasi definisi bisnis dan status transaksi sebelum memakai angka untuk laporan resmi.
+  </footer>
 </main>
+
 <script>
-let raw=[], filtered=[], trendChart=null, topChart=null, headers=[];
-const $=id=>document.getElementById(id);
-function norm(s){return String(s??'').toLowerCase().replace(/[^a-z0-9]/g,'')}
-function field(row,names){
-  const keys=Object.keys(row);
-  for(const name of names){
-    const key=keys.find(k=>norm(k)===norm(name));
-    if(key!==undefined)return row[key];
+'use strict';
+
+const $ = id => document.getElementById(id);
+let rawRows = [];
+let filteredRows = [];
+let columnMap = {};
+let allFields = [];
+let trendChart = null;
+let topChart = null;
+
+const ALIASES = {
+  date: ['Date','Transaction Date','Txn Date','Created Date','Order Date','Tanggal'],
+  agent: ['Agent Name','Assigned Agent','Agent','Sales Name','Agent Name 2'],
+  leader: ['Leader Name','Leader','Team Leader','SPV','Supervisor'],
+  product: ['Product Type','Product','Product Name','Campaign'],
+  amount: ['Amount','Total Amount','Revenue','Paid Amount','Transaction Amount'],
+  txn: ['Txn','Transaction ID','Transaction Id','Txn ID','Order ID','Order Id','Invoice ID'],
+  paid: ['Paid status','Paid Status','Payment Status','Txn Status','Status'],
+  paidStrict: ['Paid status'],
+  txnStatus: ['Txn Status'],
+  category: ['Category'],
+  campaign: ['Campaign'],
+  grade: ['GRADE','Grade'],
+  month: ['Month'],
+  week: ['Week']
+};
+
+function norm(value) {
+  return String(value ?? '').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+
+function findColumn(fields, aliases) {
+  // First try exact, case-insensitive match.
+  for (const alias of aliases) {
+    const found = fields.find(f => norm(f) === norm(alias));
+    if (found !== undefined) return found;
   }
-  for(const name of names){
-    const key=keys.find(k=>norm(k).includes(norm(name)));
-    if(key!==undefined)return row[key];
+  // Then allow a column with a longer name to match an alias.
+  for (const alias of aliases) {
+    const found = fields.find(f => norm(f).includes(norm(alias)));
+    if (found !== undefined) return found;
   }
   return '';
 }
-function num(v){
-  if(typeof v==='number')return v;
-  let s=String(v??'').trim().replace(/[Rp\s]/gi,'');
-  if(!s)return 0;
-  if(s.includes('.')&&s.includes(','))s=s.replace(/\./g,'').replace(',','.');
-  else if(s.includes(','))s=s.replace(',','.');
-  else if((s.match(/\./g)||[]).length>1)s=s.replace(/\./g,'');
-  const n=Number(s.replace(/[^0-9.-]/g,''));
-  return Number.isFinite(n)?n:0;
+
+function getValue(row, key) {
+  return key ? row[key] : '';
 }
-function dateVal(v){
-  if(v===null||v===undefined||v==='')return '';
-  if(typeof v==='number'){
-    const d=new Date(Date.UTC(1899,11,30)+v*86400000);
+
+function parseDate(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return '';
+  if (typeof value === 'number' && value > 20000 && value < 80000) {
+    const d = new Date(Date.UTC(1899,11,30) + value * 86400000);
     return d.toISOString().slice(0,10);
   }
-  const s=String(v).trim();
-  let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
-  if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`}
-  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if(m)return `${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+  const s = String(value).trim();
+  let m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+  if (m) {
+    let year = Number(m[3]);
+    if (year < 100) year += 2000;
+    const day = Number(m[1]), month = Number(m[2]);
+    if (month > 12 && day <= 12) {
+      return `${year}-${String(day).padStart(2,'0')}-${String(month).padStart(2,'0')}`;
+    }
+    return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  const d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0,10);
   return '';
 }
-function info(r){
+
+function parseAmount(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  let s = String(value ?? '').trim();
+  if (!s) return 0;
+  s = s.replace(/Rp/gi,'').replace(/\s/g,'').replace(/[^\d,.\-]/g,'');
+  if (!s || s === '-') return 0;
+  // Indonesian format: 1.234.567,89
+  if (s.includes('.') && s.includes(',')) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g,'').replace(',','.');
+    } else {
+      s = s.replace(/,/g,'');
+    }
+  } else if (s.includes(',')) {
+    const parts = s.split(',');
+    s = parts.length === 2 && parts[1].length <= 2
+      ? parts[0].replace(/\./g,'') + '.' + parts[1]
+      : s.replace(/,/g,'');
+  } else if ((s.match(/\./g) || []).length > 1) {
+    s = s.replace(/\./g,'');
+  } else if (/^\-?\d{1,3}\.\d{3}$/.test(s)) {
+    s = s.replace('.','');
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function text(value, fallback='—') {
+  const s = String(value ?? '').trim();
+  return s || fallback;
+}
+
+function normalizedStatus(row) {
+  // Prefer explicit Paid status if the RAW has it.
+  const keys = [
+    columnMap.paidStrict,
+    columnMap.txnStatus,
+    columnMap.paid
+  ].filter(Boolean);
+  for (const key of [...new Set(keys)]) {
+    const value = String(getValue(row,key) ?? '').trim();
+    if (value) return value;
+  }
+  return '';
+}
+
+function isPaidStatus(value) {
+  const s = norm(value);
+  if (!s) return false;
+  // Exact known paid indicators; do not count "unpaid" or "not paid".
+  if (['paid','fullypaid','success','successful','berhasil','lunas','paymentcompleted','completedpaid'].includes(s)) return true;
+  if (s.includes('unpaid') || s.includes('notpaid') || s.includes('belumlunas') || s.includes('belumbayar')) return false;
+  return false;
+}
+
+function isKnownUnpaid(value) {
+  const s = norm(value);
+  if (!s) return false;
+  return ['unpaid','pending','failed','cancelled','canceled','belumlunas','belumbayar','belumdibayar','expired','refund','refunded'].some(x=>s.includes(x));
+}
+
+function buildRecord(row, index) {
+  const amountRaw = getValue(row,columnMap.amount);
+  const status = normalizedStatus(row);
   return {
-    date:dateVal(field(r,['Date','Transaction Date','Created Date'])),
-    agent:String(field(r,['Agent Name','Assigned Agent','Agent','Sales Name'])||'Unknown').trim(),
-    leader:String(field(r,['Leader Name','Leader','Team Leader'])||'Unknown').trim(),
-    product:String(field(r,['Product Type','Product','Campaign'])||'Unknown').trim(),
-    amount:num(field(r,['Amount','Total Amount','Revenue','Paid Amount'])),
-    txn:field(r,['Txn','Transaction ID','Order ID']),
-    status:String(field(r,['Paid status','Payment Status','Txn Status','Status'])).trim()
+    index,
+    raw: row,
+    date: parseDate(getValue(row,columnMap.date)),
+    agent: text(getValue(row,columnMap.agent),'Unknown'),
+    leader: text(getValue(row,columnMap.leader),'Unknown'),
+    product: text(getValue(row,columnMap.product),'Unknown'),
+    amount: parseAmount(amountRaw),
+    amountRaw,
+    txn: String(getValue(row,columnMap.txn) ?? '').trim(),
+    status,
+    paid: isPaidStatus(status),
+    knownUnpaid: isKnownUnpaid(status)
   };
 }
-function rupiah(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
-function uniqueOptions(id,values){
-  const list=[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  $(id).innerHTML=list.map(v=>`<option value="${String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">`).join('');
+
+function formatRupiah(value) {
+  return new Intl.NumberFormat('id-ID',{
+    style:'currency',currency:'IDR',maximumFractionDigits:0
+  }).format(value || 0);
 }
-function loadFile(file){
-  if(!file)return;
-  $('status').textContent='Membaca file...';
-  Papa.parse(file,{header:true,skipEmptyLines:true,dynamicTyping:false,complete:res=>{
-    raw=res.data.filter(r=>Object.values(r).some(v=>String(v??'').trim()));
-    headers=res.meta.fields||[];
-    if(!raw.length){$('status').textContent='File kosong atau format CSV tidak terbaca.';return}
-    const all=raw.map(info);
-    uniqueOptions('agents',all.map(x=>x.agent));
-    uniqueOptions('leaders',all.map(x=>x.leader));
-    uniqueOptions('products',all.map(x=>x.product));
-    const dates=all.map(x=>x.date).filter(Boolean).sort();
-    if(dates.length)$('end').value=dates[dates.length-1];
-    $('status').textContent=`Berhasil membaca ${raw.length.toLocaleString('id-ID')} baris. Filter awal dimulai 29 Juni 2026.`;
-    render();
-  },error:err=>{$('status').textContent='Gagal membaca CSV: '+err.message}});
+
+function formatNumber(value) {
+  return new Intl.NumberFormat('id-ID').format(value || 0);
 }
-function render(){
-  if(!raw.length)return;
-  const start=$('start').value||'2026-06-29', end=$('end').value||'9999-12-31';
-  const agent=$('agent').value.trim().toLowerCase(), leader=$('leader').value.trim().toLowerCase(), product=$('product').value.trim().toLowerCase();
-  filtered=raw.map((r,i)=>({...info(r),_raw:r,_i:i})).filter(x=>
-    x.date && x.date>=start && x.date<=end &&
-    (!agent||x.agent.toLowerCase().includes(agent)) &&
-    (!leader||x.leader.toLowerCase().includes(leader)) &&
-    (!product||x.product.toLowerCase().includes(product))
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function fillSelect(id, values, placeholder) {
+  const select = $(id);
+  const old = select.value;
+  const unique = [...new Set(values.filter(v=>v && v!=='Unknown'))]
+    .sort((a,b)=>a.localeCompare(b,'id'));
+  select.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>` +
+    unique.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  if (unique.includes(old)) select.value = old;
+}
+
+function setMapping() {
+  const labels = [
+    ['date','Tanggal'],
+    ['agent','Agent'],
+    ['leader','Leader / SPV'],
+    ['product','Product type'],
+    ['amount','Amount'],
+    ['txn','ID transaksi'],
+    ['paidStrict','Paid status'],
+    ['txnStatus','Txn Status'],
+    ['category','Category'],
+    ['campaign','Campaign'],
+    ['grade','Grade']
+  ];
+  $('mapping').innerHTML = labels.map(([key,label]) => {
+    const col = columnMap[key] || 'Tidak ditemukan';
+    return `<div class="map-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(col)}</strong></div>`;
+  }).join('');
+}
+
+function renderStatusAudit(rows) {
+  const counts = {};
+  rows.forEach(r=>{
+    const s = r.status || '(kosong)';
+    counts[s] = (counts[s] || 0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,18);
+  $('statusList').innerHTML = sorted.length
+    ? sorted.map(([name,count])=>`<div class="status-chip">${escapeHtml(name)} <b>${formatNumber(count)}</b></div>`).join('')
+    : '<div class="empty">Tidak ada status pada baris terfilter.</div>';
+
+  if (!columnMap.paidStrict) {
+    $('statusExplanation').textContent =
+      'Kolom Paid status tidak ditemukan. Dashboard menggunakan kolom status pengganti yang ditampilkan pada pemetaan. Verifikasi definisi Paid dengan sumber data sebelum laporan resmi.';
+  } else {
+    $('statusExplanation').textContent =
+      'Status pembayaran diprioritaskan dari kolom Paid status. Hanya status Paid / Success / Lunas yang dikenali sebagai pembayaran berhasil; nilai lain tidak otomatis dianggap Paid.';
+  }
+}
+
+function updateCharts(rows, board) {
+  const daily = {};
+  rows.forEach(r=>{
+    if (r.date) daily[r.date] = (daily[r.date] || 0) + r.amount;
+  });
+  const dates = Object.keys(daily).sort();
+  const commonOptions = {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#b8c9e1',boxWidth:10,font:{size:11}}}},
+    scales:{
+      x:{ticks:{color:'#91a6c4',maxRotation:45,autoSkip:true},grid:{color:'#233650'}},
+      y:{beginAtZero:true,ticks:{
+        color:'#91a6c4',
+        callback:v=>new Intl.NumberFormat('id-ID',{notation:'compact',maximumFractionDigits:1}).format(v)
+      },grid:{color:'#233650'}}
+    }
+  };
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart($('trend'),{
+    type:'line',
+    data:{labels:dates,datasets:[{
+      label:'Amount',data:dates.map(d=>daily[d]),
+      borderColor:'#48c7ff',backgroundColor:'rgba(72,199,255,.12)',
+      fill:true,tension:.28,pointRadius:dates.length>45?0:2,
+      pointHoverRadius:5,borderWidth:2
+    }]},
+    options:commonOptions
+  });
+
+  if (topChart) topChart.destroy();
+  const top = board.slice(0,10).reverse();
+  topChart = new Chart($('topChart'),{
+    type:'bar',
+    data:{labels:top.map(x=>x.agent),datasets:[{
+      label:'Amount',data:top.map(x=>x.amount),
+      backgroundColor:'#397bff',borderRadius:5,barThickness:'flex',
+      maxBarThickness:22
+    }]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{beginAtZero:true,ticks:{
+          color:'#91a6c4',
+          callback:v=>new Intl.NumberFormat('id-ID',{notation:'compact',maximumFractionDigits:1}).format(v)
+        },grid:{color:'#233650'}},
+        y:{ticks:{color:'#dce8f8',font:{size:10}},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function render() {
+  if (!rawRows.length) return;
+
+  const start = $('start').value || '2026-06-29';
+  const end = $('end').value || '9999-12-31';
+  const agent = $('agent').value;
+  const leader = $('leader').value;
+  const product = $('product').value;
+  const paidFilter = $('paidFilter').value;
+
+  let rows = rawRows.map(buildRecord).filter(r=>
+    r.date && r.date >= start && r.date <= end
   );
-  const amount=filtered.reduce((s,x)=>s+x.amount,0);
-  const ids=filtered.map(x=>x.txn).filter(Boolean);
-  const paid=filtered.filter(x=>/paid|success|berhasil|lunas/i.test(x.status)).length;
-  $('amount').textContent=rupiah(amount);
-  $('txns').textContent=(ids.length?new Set(ids).size:filtered.length).toLocaleString('id-ID');
-  $('agentsCount').textContent=new Set(filtered.map(x=>x.agent).filter(x=>x!=='Unknown')).size.toLocaleString('id-ID');
-  $('paid').textContent=paid.toLocaleString('id-ID');
+  if (agent) rows = rows.filter(r=>r.agent===agent);
+  if (leader) rows = rows.filter(r=>r.leader===leader);
+  if (product) rows = rows.filter(r=>r.product===product);
+  if (paidFilter==='paid') rows = rows.filter(r=>r.paid);
+  if (paidFilter==='unpaid') rows = rows.filter(r=>r.knownUnpaid);
+  if (paidFilter==='unknown') rows = rows.filter(r=>!r.status);
 
-  const groups={};
-  filtered.forEach(x=>{if(!groups[x.agent])groups[x.agent]={agent:x.agent,leader:x.leader,amount:0,rows:0,ids:new Set()};const g=groups[x.agent];g.amount+=x.amount;g.rows++;if(x.txn)g.ids.add(x.txn)});
-  const board=Object.values(groups).sort((a,b)=>b.amount-a.amount);
-  $('leaderboard').innerHTML=board.length?board.map((g,i)=>`<tr><td>${i+1}</td><td>${esc(g.agent)}</td><td>${esc(g.leader)}</td><td>${(g.ids.size||g.rows).toLocaleString('id-ID')}</td><td>${rupiah(g.amount)}</td></tr>`).join(''):'<tr><td colspan="5">Tidak ada data untuk filter ini.</td></tr>';
+  filteredRows = rows;
+  const totalAmount = rows.reduce((sum,r)=>sum+r.amount,0);
+  const txnIds = rows.map(r=>r.txn).filter(Boolean);
+  const distinctTxns = new Set(txnIds).size;
+  const txnCount = columnMap.txn && txnIds.length ? distinctTxns : rows.length;
+  const agents = new Set(rows.map(r=>r.agent).filter(a=>a!=='Unknown'));
+  const paidRows = rows.filter(r=>r.paid);
+  const paidTxnIds = new Set(paidRows.map(r=>r.txn).filter(Boolean));
+  const paidCount = columnMap.txn && paidTxnIds.size
+    ? paidTxnIds.size
+    : paidRows.length;
 
-  const daily={};filtered.forEach(x=>daily[x.date]=(daily[x.date]||0)+x.amount);
-  if(trendChart)trendChart.destroy();
-  trendChart=new Chart($('trend'),{type:'line',data:{labels:Object.keys(daily).sort(),datasets:[{label:'Amount',data:Object.keys(daily).sort().map(d=>daily[d]),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,.14)',fill:true,tension:.25}]},options:{responsive:true,plugins:{legend:{labels:{color:'#edf5ff'}}},scales:{x:{ticks:{color:'#9db0ca'},grid:{color:'#29415e'}},y:{ticks:{color:'#9db0ca',callback:v=>new Intl.NumberFormat('id-ID',{notation:'compact'}).format(v)},grid:{color:'#29415e'}}}}});
-  if(topChart)topChart.destroy();
-  const top=board.slice(0,10).reverse();
-  topChart=new Chart($('topChart'),{type:'bar',data:{labels:top.map(x=>x.agent),datasets:[{label:'Amount',data:top.map(x=>x.amount),backgroundColor:'#3b82f6',borderRadius:5}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9db0ca',callback:v=>new Intl.NumberFormat('id-ID',{notation:'compact'}).format(v)},grid:{color:'#29415e'}},y:{ticks:{color:'#edf5ff'},grid:{display:false}}}}});
+  $('amount').textContent = formatRupiah(totalAmount);
+  $('txns').textContent = formatNumber(txnCount);
+  $('agentCount').textContent = formatNumber(agents.size);
+  $('paidCount').textContent = formatNumber(paidCount);
+  $('txnFoot').textContent = columnMap.txn && txnIds.length
+    ? `${formatNumber(distinctTxns)} ID transaksi unik`
+    : 'Dihitung berdasarkan baris data';
+  $('paidFoot').textContent = columnMap.paidStrict
+    ? `${formatNumber(paidRows.length)} baris berstatus Paid`
+    : 'Periksa pemetaan status pembayaran';
+  $('periodLabel').textContent = `${start} – ${end==='9999-12-31'?'data terakhir':end}`;
+
+  const grouped = new Map();
+  rows.forEach(r=>{
+    if (!grouped.has(r.agent)) grouped.set(r.agent,{
+      agent:r.agent,leader:r.leader,amount:0,rows:0,txns:new Set(),paidRows:0,paidTxns:new Set()
+    });
+    const g = grouped.get(r.agent);
+    g.amount += r.amount;
+    g.rows++;
+    if (r.txn) g.txns.add(r.txn);
+    if (r.paid) {
+      g.paidRows++;
+      if (r.txn) g.paidTxns.add(r.txn);
+    }
+  });
+
+  const board = [...grouped.values()].sort((a,b)=>b.amount-a.amount);
+  $('boardCount').textContent = `${formatNumber(board.length)} agent`;
+  $('leaderboard').innerHTML = board.length ? board.map((g,i)=>{
+    const n = columnMap.txn && g.txns.size ? g.txns.size : g.rows;
+    const p = columnMap.txn && g.paidTxns.size ? g.paidTxns.size : g.paidRows;
+    return `<tr>
+      <td class="rank">${String(i+1).padStart(2,'0')}</td>
+      <td class="agent-name">${escapeHtml(g.agent)}</td>
+      <td>${escapeHtml(g.leader)}</td>
+      <td>${formatNumber(n)}</td>
+      <td class="money">${formatRupiah(g.amount)}</td>
+      <td>${formatNumber(p)}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty">Tidak ada data sesuai filter.</td></tr>';
+
+  updateCharts(rows,board);
+  renderStatusAudit(rows);
+  $('status').textContent = `Data terbaca: ${formatNumber(rawRows.length)} baris · Hasil filter: ${formatNumber(rows.length)} baris.`;
 }
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-$('file').addEventListener('change',e=>loadFile(e.target.files[0]));
-['start','end','agent','leader','product'].forEach(id=>$(id).addEventListener('input',render));
-$('reset').addEventListener('click',()=>{$('start').value='2026-06-29';$('agent').value='';$('leader').value='';$('product').value='';render()});
+
+function loadCsv(file) {
+  if (!file) return;
+  $('status').textContent = 'Membaca dan memvalidasi file CSV...';
+
+  Papa.parse(file,{
+    header:true,
+    skipEmptyLines:'greedy',
+    dynamicTyping:false,
+    transformHeader:h=>String(h??'').replace(/^\uFEFF/,'').trim(),
+    complete:result=>{
+      allFields = (result.meta.fields || []).filter(Boolean);
+      rawRows = result.data.filter(row=>
+        Object.values(row).some(v=>String(v??'').trim()!=='')
+      );
+
+      if (!rawRows.length) {
+        $('status').textContent = 'File tidak berisi data yang bisa dibaca.';
+        return;
+      }
+
+      columnMap = {};
+      for (const key of Object.keys(ALIASES)) {
+        columnMap[key] = findColumn(allFields,ALIASES[key]);
+      }
+
+      if (!columnMap.date) {
+        $('status').textContent = 'Kolom tanggal tidak ditemukan. Kolom tersedia: '+allFields.join(', ');
+        return;
+      }
+
+      fillSelect('agent',rawRows.map(r=>text(getValue(r,columnMap.agent),'')),'Semua agent');
+      fillSelect('leader',rawRows.map(r=>text(getValue(r,columnMap.leader),'')),'Semua leader');
+      fillSelect('product',rawRows.map(r=>text(getValue(r,columnMap.product),'')),'Semua produk');
+
+      const dates = rawRows.map(r=>parseDate(getValue(r,columnMap.date))).filter(Boolean).sort();
+      if (dates.length) $('end').value = dates[dates.length-1];
+      $('start').value = '2026-06-29';
+
+      setMapping();
+      render();
+
+      const warnings = [];
+      if (!columnMap.amount) warnings.push('kolom Amount tidak ditemukan');
+      if (!columnMap.agent) warnings.push('kolom Agent tidak ditemukan');
+      if (!columnMap.txn) warnings.push('ID transaksi tidak ditemukan; jumlah transaksi dihitung dari baris');
+      if (!columnMap.paidStrict) warnings.push('kolom Paid status tidak ditemukan');
+      $('status').textContent = `Berhasil membaca ${formatNumber(rawRows.length)} baris. ` +
+        (warnings.length ? 'Perlu dicek: '+warnings.join('; ')+'.' : 'Pemetaan kolom utama ditemukan.');
+    },
+    error:error=>{
+      $('status').textContent = 'Gagal membaca CSV: '+error.message;
+    }
+  });
+}
+
+$('file').addEventListener('change',e=>loadCsv(e.target.files[0]));
+['start','end','agent','leader','product','paidFilter'].forEach(id=>{
+  $(id).addEventListener('change',render);
+});
+$('reset').addEventListener('click',()=>{
+  $('start').value='2026-06-29';
+  $('agent').value='';
+  $('leader').value='';
+  $('product').value='';
+  $('paidFilter').value='';
+  render();
+});
 $('export').addEventListener('click',()=>{
-  if(!filtered.length){alert('Belum ada data untuk diekspor.');return}
-  const rows=[['Date','Agent Name','Leader Name','Product Type','Amount','Transaction','Status'],...filtered.map(x=>[x.date,x.agent,x.leader,x.product,x.amount,x.txn,x.status])];
-  const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));a.download='asgard-performance-filtered.csv';a.click();URL.revokeObjectURL(a.href);
+  if (!filteredRows.length) {
+    alert('Tidak ada data untuk diekspor. Pilih file CSV terlebih dahulu.');
+    return;
+  }
+  const fields = ['date','agent','leader','product','amount','txn','status'];
+  const labels = ['Date','Agent Name','Leader Name','Product Type','Amount','Txn','Paid status'];
+  const rows = [labels,...filteredRows.map(r=>fields.map(f=>r[f]??''))];
+  const csv = rows.map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url;
+  a.download='asgard-performance-filtered.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 });
 </script>
 </body>

@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASGARD Performance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--bg:#081426;--panel:#12243d;--blue:#2563eb;--cyan:#38bdf8;--text:#edf5ff;--muted:#9db0ca}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#071426,#102c50);color:var(--text);font:14px Arial,sans-serif;min-height:100vh}
+header{padding:26px 5%;border-bottom:1px solid #29415e}
+h1{margin:0;font-size:27px}header p{color:var(--muted);margin:9px 0 0}
+main{max-width:1400px;margin:auto;padding:24px 5%}
+.panel,.kpi{background:rgba(18,36,61,.94);border:1px solid #29415e;border-radius:15px;padding:18px}
+.upload{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:20px}
+input,button{background:#0a1930;color:var(--text);border:1px solid #36516f;border-radius:8px;padding:11px}
+button{background:var(--blue);border:0;cursor:pointer;font-weight:bold}
+button:hover{opacity:.85}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.filters label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+.kpi small{color:var(--muted)}.kpi strong{display:block;font-size:25px;margin-top:12px;overflow-wrap:anywhere}
+.content{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:20px}
+h2{font-size:17px;margin:0 0 16px}
+.table-wrap{overflow:auto;max-height:480px}
+table{border-collapse:collapse;width:100%;white-space:nowrap}
+th,td{padding:11px;text-align:left;border-bottom:1px solid #29415e}
+th{color:#9edcff;background:#142945;position:sticky;top:0}
+.note{color:var(--muted);font-size:12px;line-height:1.6}
+.status{color:#9edcff;margin:10px 0}
+canvas{max-height:320px}
+@media(max-width:800px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.content{grid-template-columns:1fr}h1{font-size:22px}}
+@media(max-width:420px){.kpis{grid-template-columns:1fr 1fr}.kpi strong{font-size:19px}main{padding:18px 4%}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ASGARD Performance</h1>
+  <p>Sales Performance Dashboard · 2026</p>
+</header>
+<main>
+  <section class="panel upload">
+    <div>
+      <strong>Upload data RAW (.csv)</strong>
+      <div class="note">File dibaca di browser kamu, tidak diunggah ke website.</div>
+    </div>
+    <input id="file" type="file" accept=".csv">
+    <button id="export">Export hasil CSV</button>
+  </section>
+  <div id="status" class="status">Pilih file [CENTER] ASGARD Performance 2026 - RAW.csv untuk memulai.</div>
+
+  <section class="filters">
+    <label>Tanggal mulai<input id="start" type="date" value="2026-06-29"></label>
+    <label>Tanggal akhir<input id="end" type="date"></label>
+    <label>Agent<input id="agent" list="agents" placeholder="Semua agent"></label>
+    <datalist id="agents"></datalist>
+    <label>Leader<input id="leader" list="leaders" placeholder="Semua leader"></label>
+    <datalist id="leaders"></datalist>
+    <label>Product Type<input id="product" list="products" placeholder="Semua produk"></label>
+    <datalist id="products"></datalist>
+    <button id="reset">Reset filter</button>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi"><small>Total Amount</small><strong id="amount">Rp0</strong></div>
+    <div class="kpi"><small>Total Transaksi / Baris</small><strong id="txns">0</strong></div>
+    <div class="kpi"><small>Agent Aktif</small><strong id="agentsCount">0</strong></div>
+    <div class="kpi"><small>Transaksi Paid</small><strong id="paid">0</strong></div>
+  </section>
+
+  <section class="content">
+    <div class="panel">
+      <h2>Tren Amount Harian</h2>
+      <canvas id="trend"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Top 10 Agent berdasarkan Amount</h2>
+      <canvas id="topChart"></canvas>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-bottom:20px">
+    <h2>Leaderboard Agent</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rank</th><th>Agent</th><th>Leader</th><th>Transaksi</th><th>Total Amount</th></tr></thead>
+        <tbody id="leaderboard"><tr><td colspan="5">Upload file CSV untuk melihat data.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+  <p class="note">Catatan: KPI Amount menjumlahkan kolom Amount yang dapat dibaca sebagai angka. Pastikan definisi transaksi dan status Paid sesuai kebutuhan laporan. Data yang tampil mengikuti filter tanggal, agent, leader, dan product.</p>
+</main>
+<script>
+let raw=[], filtered=[], trendChart=null, topChart=null, headers=[];
+const $=id=>document.getElementById(id);
+function norm(s){return String(s??'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function field(row,names){
+  const keys=Object.keys(row);
+  for(const name of names){
+    const key=keys.find(k=>norm(k)===norm(name));
+    if(key!==undefined)return row[key];
+  }
+  for(const name of names){
+    const key=keys.find(k=>norm(k).includes(norm(name)));
+    if(key!==undefined)return row[key];
+  }
+  return '';
+}
+function num(v){
+  if(typeof v==='number')return v;
+  let s=String(v??'').trim().replace(/[Rp\s]/gi,'');
+  if(!s)return 0;
+  if(s.includes('.')&&s.includes(','))s=s.replace(/\./g,'').replace(',','.');
+  else if(s.includes(','))s=s.replace(',','.');
+  else if((s.match(/\./g)||[]).length>1)s=s.replace(/\./g,'');
+  const n=Number(s.replace(/[^0-9.-]/g,''));
+  return Number.isFinite(n)?n:0;
+}
+function dateVal(v){
+  if(v===null||v===undefined||v==='')return '';
+  if(typeof v==='number'){
+    const d=new Date(Date.UTC(1899,11,30)+v*86400000);
+    return d.toISOString().slice(0,10);
+  }
+  const s=String(v).trim();
+  let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/);
+  if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`}
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m)return `${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+  return '';
+}
+function info(r){
+  return {
+    date:dateVal(field(r,['Date','Transaction Date','Created Date'])),
+    agent:String(field(r,['Agent Name','Assigned Agent','Agent','Sales Name'])||'Unknown').trim(),
+    leader:String(field(r,['Leader Name','Leader','Team Leader'])||'Unknown').trim(),
+    product:String(field(r,['Product Type','Product','Campaign'])||'Unknown').trim(),
+    amount:num(field(r,['Amount','Total Amount','Revenue','Paid Amount'])),
+    txn:field(r,['Txn','Transaction ID','Order ID']),
+    status:String(field(r,['Paid status','Payment Status','Txn Status','Status'])).trim()
+  };
+}
+function rupiah(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n)}
+function uniqueOptions(id,values){
+  const list=[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  $(id).innerHTML=list.map(v=>`<option value="${String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}">`).join('');
+}
+function loadFile(file){
+  if(!file)return;
+  $('status').textContent='Membaca file...';
+  Papa.parse(file,{header:true,skipEmptyLines:true,dynamicTyping:false,complete:res=>{
+    raw=res.data.filter(r=>Object.values(r).some(v=>String(v??'').trim()));
+    headers=res.meta.fields||[];
+    if(!raw.length){$('status').textContent='File kosong atau format CSV tidak terbaca.';return}
+    const all=raw.map(info);
+    uniqueOptions('agents',all.map(x=>x.agent));
+    uniqueOptions('leaders',all.map(x=>x.leader));
+    uniqueOptions('products',all.map(x=>x.product));
+    const dates=all.map(x=>x.date).filter(Boolean).sort();
+    if(dates.length)$('end').value=dates[dates.length-1];
+    $('status').textContent=`Berhasil membaca ${raw.length.toLocaleString('id-ID')} baris. Filter awal dimulai 29 Juni 2026.`;
+    render();
+  },error:err=>{$('status').textContent='Gagal membaca CSV: '+err.message}});
+}
+function render(){
+  if(!raw.length)return;
+  const start=$('start').value||'2026-06-29', end=$('end').value||'9999-12-31';
+  const agent=$('agent').value.trim().toLowerCase(), leader=$('leader').value.trim().toLowerCase(), product=$('product').value.trim().toLowerCase();
+  filtered=raw.map((r,i)=>({...info(r),_raw:r,_i:i})).filter(x=>
+    x.date && x.date>=start && x.date<=end &&
+    (!agent||x.agent.toLowerCase().includes(agent)) &&
+    (!leader||x.leader.toLowerCase().includes(leader)) &&
+    (!product||x.product.toLowerCase().includes(product))
+  );
+  const amount=filtered.reduce((s,x)=>s+x.amount,0);
+  const ids=filtered.map(x=>x.txn).filter(Boolean);
+  const paid=filtered.filter(x=>/paid|success|berhasil|lunas/i.test(x.status)).length;
+  $('amount').textContent=rupiah(amount);
+  $('txns').textContent=(ids.length?new Set(ids).size:filtered.length).toLocaleString('id-ID');
+  $('agentsCount').textContent=new Set(filtered.map(x=>x.agent).filter(x=>x!=='Unknown')).size.toLocaleString('id-ID');
+  $('paid').textContent=paid.toLocaleString('id-ID');
+
+  const groups={};
+  filtered.forEach(x=>{if(!groups[x.agent])groups[x.agent]={agent:x.agent,leader:x.leader,amount:0,rows:0,ids:new Set()};const g=groups[x.agent];g.amount+=x.amount;g.rows++;if(x.txn)g.ids.add(x.txn)});
+  const board=Object.values(groups).sort((a,b)=>b.amount-a.amount);
+  $('leaderboard').innerHTML=board.length?board.map((g,i)=>`<tr><td>${i+1}</td><td>${esc(g.agent)}</td><td>${esc(g.leader)}</td><td>${(g.ids.size||g.rows).toLocaleString('id-ID')}</td><td>${rupiah(g.amount)}</td></tr>`).join(''):'<tr><td colspan="5">Tidak ada data untuk filter ini.</td></tr>';
+
+  const daily={};filtered.forEach(x=>daily[x.date]=(daily[x.date]||0)+x.amount);
+  if(trendChart)trendChart.destroy();
+  trendChart=new Chart($('trend'),{type:'line',data:{labels:Object.keys(daily).sort(),datasets:[{label:'Amount',data:Object.keys(daily).sort().map(d=>daily[d]),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,.14)',fill:true,tension:.25}]},options:{responsive:true,plugins:{legend:{labels:{color:'#edf5ff'}}},scales:{x:{ticks:{color:'#9db0ca'},grid:{color:'#29415e'}},y:{ticks:{color:'#9db0ca',callback:v=>new Intl.NumberFormat('id-ID',{notation:'compact'}).format(v)},grid:{color:'#29415e'}}}}});
+  if(topChart)topChart.destroy();
+  const top=board.slice(0,10).reverse();
+  topChart=new Chart($('topChart'),{type:'bar',data:{labels:top.map(x=>x.agent),datasets:[{label:'Amount',data:top.map(x=>x.amount),backgroundColor:'#3b82f6',borderRadius:5}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9db0ca',callback:v=>new Intl.NumberFormat('id-ID',{notation:'compact'}).format(v)},grid:{color:'#29415e'}},y:{ticks:{color:'#edf5ff'},grid:{display:false}}}}});
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('file').addEventListener('change',e=>loadFile(e.target.files[0]));
+['start','end','agent','leader','product'].forEach(id=>$(id).addEventListener('input',render));
+$('reset').addEventListener('click',()=>{$('start').value='2026-06-29';$('agent').value='';$('leader').value='';$('product').value='';render()});
+$('export').addEventListener('click',()=>{
+  if(!filtered.length){alert('Belum ada data untuk diekspor.');return}
+  const rows=[['Date','Agent Name','Leader Name','Product Type','Amount','Transaction','Status'],...filtered.map(x=>[x.date,x.agent,x.leader,x.product,x.amount,x.txn,x.status])];
+  const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}));a.download='asgard-performance-filtered.csv';a.click();URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>

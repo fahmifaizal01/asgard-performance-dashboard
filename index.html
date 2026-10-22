@@ -2177,6 +2177,41 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
 .cmp-diff.down { color: #b42318; }
 .mini-bar-row > span { color: #36739a; }
 
+
+/* Coach leaderboard: color-coded product groups, aligned with Agent leaderboard */
+.coach-alb-scroll { max-height: 78vh; overflow: auto; border-radius: 0 0 14px 14px; }
+.coach-alb-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; }
+.coach-alb-table th, .coach-alb-table td { padding: 7px 9px; border-right: 1px solid #d8e2ef; border-bottom: 1px solid #d8e2ef; text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.coach-alb-table thead th { position: sticky; z-index: 3; border-color: #2c4c7c; background: #12315c; color: #fff; font-size: 11px; font-weight: 800; text-transform: none; letter-spacing: 0; }
+.coach-alb-table thead tr:first-child th { top: 0; height: 34px; }
+.coach-alb-table thead tr:nth-child(2) th { top: 34px; height: 29px; background: #1d4574; }
+.coach-alb-table thead th[rowspan="2"] { top: 0; z-index: 4; }
+.coach-alb-table thead th.grp-all { background: linear-gradient(135deg,#1d4ed8,#2563eb); }
+.coach-alb-table thead th.grp-nb { background: linear-gradient(135deg,#047857,#059669); }
+.coach-alb-table thead th.grp-prod:nth-of-type(3n) { background: linear-gradient(135deg,#6d28d9,#7c3aed); }
+.coach-alb-table thead th.grp-prod:nth-of-type(4n) { background: linear-gradient(135deg,#a21caf,#c026d3); }
+.coach-alb-table thead th.grp-prod:nth-of-type(5n) { background: linear-gradient(135deg,#b45309,#d97706); }
+.coach-alb-table thead th.grp-prod:nth-of-type(6n) { background: linear-gradient(135deg,#0369a1,#0891b2); }
+.coach-alb-table thead tr:nth-child(2) th:nth-child(3n) { background: #fff0c7; color: #854d0e; }
+.coach-alb-table tbody tr:nth-child(odd) td { background-color: #f8fbff; }
+.coach-alb-table tbody tr:nth-child(even) td { background-color: #edf4fc; }
+.coach-alb-table tbody tr:hover td { filter: brightness(.97); }
+.coach-alb-table tbody td:nth-child(1) { font-weight: 900; color: #12315c; }
+.coach-alb-table tbody tr:nth-child(1) td:first-child { background: #facc15; color: #713f12; }
+.coach-alb-table tbody tr:nth-child(2) td:first-child { background: #cbd5e1; color: #334155; }
+.coach-alb-table tbody tr:nth-child(3) td:first-child { background: #fdba74; color: #7c2d12; }
+.coach-alb-table tbody td:nth-child(2) { text-align: left; font-weight: 800; color: #0b2b50; }
+.coach-alb-table tbody td:nth-child(6), .coach-alb-table tbody td:nth-child(7) { background-color: #dbeafe; font-weight: 800; }
+.coach-alb-table tbody td:nth-child(8) { background-color: #d1fae5; font-weight: 800; }
+.coach-alb-table tbody td:nth-child(10), .coach-alb-table tbody td:nth-child(11) { background-color: #d1fae5; }
+.coach-alb-table tbody td:nth-child(12) { background-color: #fef3c7; font-weight: 800; }
+.coach-alb-table tbody td:nth-child(15), .coach-alb-table tbody td:nth-child(18), .coach-alb-table tbody td:nth-child(21) { background-color: #ede9fe; }
+.coach-alb-table tbody td:nth-child(24), .coach-alb-table tbody td:nth-child(27) { background-color: #fce7f3; }
+.coach-alb-table tbody td:nth-child(30), .coach-alb-table tbody td:nth-child(33) { background-color: #fef3c7; }
+.coach-alb-table tbody td:nth-child(36), .coach-alb-table tbody td:nth-child(39) { background-color: #cffafe; }
+.coach-alb-table tbody td:nth-child(8), .coach-alb-table tbody td:nth-child(12), .coach-alb-table tbody td:nth-child(15), .coach-alb-table tbody td:nth-child(18), .coach-alb-table tbody td:nth-child(21), .coach-alb-table tbody td:nth-child(24), .coach-alb-table tbody td:nth-child(27), .coach-alb-table tbody td:nth-child(30), .coach-alb-table tbody td:nth-child(33), .coach-alb-table tbody td:nth-child(36), .coach-alb-table tbody td:nth-child(39) { font-weight: 800; }
+.coach-alb-table .empty { text-align: center; padding: 28px; color: #64809f; }
+
 /* ---- leaderboard agent: tabel lengkap ---- */
 .alb-scroll { max-height: 78vh; overflow: auto; }
 .alb-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; }
@@ -2718,7 +2753,7 @@ tbody tr:hover, tbody tr.selected { background: var(--accent-soft); }
       <div id="coachLeaderboardViewTable">
         <section class="table-panel leaderboard-panel" id="leaderboardCoachTablePanel">
           <div class="panel-heading"><div><h2>Leaderboard Coach</h2><p>Ringkasan performa per coach dengan struktur kolom yang sama seperti Leaderboard Agent.</p></div></div>
-          <div class="table-wrap"><table class="data-table" id="leaderboardCoachTable"><thead></thead><tbody></tbody></table></div>
+          <div class="table-wrap alb-scroll coach-alb-scroll"><table class="alb-table coach-alb-table" id="leaderboardCoachTable"><thead></thead><tbody></tbody></table></div>
         </section>
       </div>
       <div id="coachLeaderboardViewCards" hidden>
@@ -3692,7 +3727,7 @@ function normalizeRows(rows) {
       category: String(read(row, "Category") || "").trim(),
       grade, rawMonth: month
     };
-  }).filter(row => row.agent && row.date && row.date >= dataStart && ["Layer 1", "Layer 2", "Prompter Inbound"].includes(row.team));
+  }).filter(row => row.agent && row.date && row.date >= dataStart);
 }
 
 function buildDodolanRows(rows) {
@@ -5407,21 +5442,14 @@ const EXCLUDED_AGENT_NAMES = new Set([
 ]);
 const EXCLUDED_COACH_NAMES = new Set(["zulfa nailis suroyya wira wijayani", "asri damayanti"]);
 function normalizedPersonName(name) {
-  return String(name || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+  return String(name || "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").trim().toLowerCase().replace(/\\s+/g, " ");
 }
 function isExcludedAgentName(name) {
-  const normalized = normalizedPersonName(name).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-  return EXCLUDED_AGENT_NAMES.has(normalized) || [...EXCLUDED_AGENT_NAMES].some(excluded => {
-    const candidate = excluded.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-    return normalized === candidate || normalized.startsWith(candidate + " ") || normalized.includes(" " + candidate + " ");
-  });
+  const normalized = normalizedPersonName(name);
+  return EXCLUDED_AGENT_NAMES.has(normalized) || [...EXCLUDED_AGENT_NAMES].some(excluded => normalized.startsWith(excluded + " ") || normalized.includes(" " + excluded + " "));
 }
 function isExcludedCoachName(name) {
-  const normalized = normalizedPersonName(name).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-  return [...EXCLUDED_COACH_NAMES].some(excluded => {
-    const candidate = excluded.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-    return normalized === candidate || normalized.startsWith(candidate + " ");
-  });
+  return EXCLUDED_COACH_NAMES.has(normalizedPersonName(name));
 }
 
 function renderAgentLeaderboard() {

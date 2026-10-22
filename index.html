@@ -5129,7 +5129,7 @@ function renderSpvCard(group, index) {
               <th rowspan="2">Private</th>
               <th rowspan="2">RB</th>
               <th rowspan="2">BAC</th>
-              <th rowspan="2">Others</th>
+              <th rowspan="2">RUANGGURU PRIVAT</th>
             </tr>
             <tr>
               <th class="group-head">Total</th>
@@ -5440,7 +5440,7 @@ const EXCLUDED_AGENT_NAMES = new Set([
   "sintyia hot marito siagian", "rachmatika nuriesta", "novrian setiaji",
   "eulis sifaul aulia", "khaerul darajat", "amaranty putri sejati"
 ]);
-const EXCLUDED_COACH_NAMES = new Set(["zulfa nailis suroyya wira wijayani", "asri damayanti"]);
+const EXCLUDED_COACH_NAMES = new Set(["zulfa nailis suroyya wira wijayani", "asri damayanti", "muhammad erwin"]);
 function normalizedPersonName(name) {
   return String(name || "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").trim().toLowerCase().replace(/\\s+/g, " ");
 }
@@ -5449,7 +5449,8 @@ function isExcludedAgentName(name) {
   return EXCLUDED_AGENT_NAMES.has(normalized) || [...EXCLUDED_AGENT_NAMES].some(excluded => normalized.startsWith(excluded + " ") || normalized.includes(" " + excluded + " "));
 }
 function isExcludedCoachName(name) {
-  return EXCLUDED_COACH_NAMES.has(normalizedPersonName(name));
+  const normalized = normalizedPersonName(name);
+  return EXCLUDED_COACH_NAMES.has(normalized) || [...EXCLUDED_COACH_NAMES].some(excluded => normalized.startsWith(excluded + " ") || normalized.includes(" " + excluded + " ") || normalized.endsWith(" " + excluded));
 }
 
 function renderAgentLeaderboard() {

@@ -3691,14 +3691,18 @@ function normalizeRows(rows) {
     return "";
   };
   const dataStart = new Date(2026, 5, 29); // Mulai dari W1 Juli (W27), 29 Juni 2026
-  // Kategori agent bersumber dari TARGET ALL AGENT, menggunakan baris dengan week paling baru per agent.
-  const latestTargetByAgent = new Map();
+  const allowedTeams = new Set(["Layer 1", "Layer 2", "Prompter Inbound"]);
+
+  // Keanggotaan agent, kategori, dan coach mengikuti TARGET ALL AGENT pada week transaksi,
+  // bukan memakai kategori/coach dari week terbaru untuk seluruh riwayat agent.
+  const assignmentByAgentWeek = new Map();
   (targetRows || []).forEach(target => {
-    const key = String(target.agent || "").trim().toLowerCase();
-    if (!key || !target.team) return;
-    const current = latestTargetByAgent.get(key);
-    if (!current || Number(target.weekNum || 0) >= Number(current.weekNum || 0)) latestTargetByAgent.set(key, target);
+    const agentKey = String(target.agent || "").trim().toLowerCase();
+    const weekKey = String(target.week || "").trim();
+    if (!agentKey || !weekKey || !allowedTeams.has(target.team)) return;
+    assignmentByAgentWeek.set(`${agentKey}|${weekKey}`, target);
   });
+
   return rows.map(row => {
     const date = parseDate(read(row, "Date"));
     const weekNum = Number(read(row, "Week")) || 0;
@@ -3706,30 +3710,33 @@ function normalizeRows(rows) {
     const monthRawKey = String(month || "").trim().toUpperCase().replace(/\./g,"").slice(0,3);
     const monthKey = ({OKT:"OCT",AGU:"AUG",DES:"DEC"})[monthRawKey] || monthRawKey;
     const weekName = `RAW-${monthKey}-W${weekNum || (date ? Math.ceil(date.getDate()/7) : 0)}`;
+    const canonicalWeek = weekFor(weekName, weekNum);
     const grade = String(read(row, "Grade") || "Uncategorized").trim();
     const agentName = String(read(row, "Agent Name") || "").trim();
-    const targetAgent = latestTargetByAgent.get(agentName.toLowerCase());
-    const category = targetAgent ? targetAgent.team : normalizeTeam(read(row, "KATEGORI", "Kategori", "Grade") || grade);
+    const targetAssignment = assignmentByAgentWeek.get(`${agentName.toLowerCase()}|${canonicalWeek.name}`);
+    const rawLeader = String(read(row, "Leader Name", "SPV") || "").trim();
+
     return {
       date, weekName, weekNum,
       invoice: String(read(row, "Invoice", "Txn") || ""),
       agent: agentName,
-      leader: String((targetAgent && (targetAgent.leader || targetAgent.spv)) || read(row, "Leader Name", "SPV") || "").trim(),
+      leader: targetAssignment ? String(targetAssignment.leader || targetAssignment.spv || rawLeader).trim() : "",
       packageName: String(read(row, "Package Name") || "").trim(),
       campaign: String(read(row, "Campaign", "CAMPAIGN", "Campa") || "").trim(),
       assignedDate: formatAssignedDate(read(row, "Assigned Date")),
       assignedAgent: String(read(row, "Assigned Agent") || "").trim(),
-      team: category,
+      team: targetAssignment ? targetAssignment.team : "",
       product_type: String(read(row, "Product Type", "PRODUCT") || "").trim(),
       product_group: String(read(row, "PRODUCT") || "").trim(),
       revenue: parseAmount(read(row, "Amount")),
       status: String(read(row, "Txn Status", "Status") || "").trim(),
       category: String(read(row, "Category") || "").trim(),
-      grade, rawMonth: month
+      grade, rawMonth: month,
+      targetAssignmentFound: Boolean(targetAssignment)
     };
-  }).filter(row => row.agent && row.date && row.date >= dataStart);
+  }).filter(row => row.agent && row.date && row.date >= dataStart
+    && (targetRows.length === 0 || (row.targetAssignmentFound && allowedTeams.has(row.team))));
 }
-
 function buildDodolanRows(rows) {
   return rows.map(row => {
     const week = weekFor(row.weekName, row.weekNum);
